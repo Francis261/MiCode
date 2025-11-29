@@ -9,6 +9,8 @@ export interface Product {
   tags: string[];
   rating: number;
   reviews: number;
+  languageFramework?: string; // e.g., "React", "Next.js", "Vue", "Node.js"
+  templateType?: string; // e.g., "Login/Signup", "Landing Page", "Dashboard", "E-commerce"
 }
 
 export const products: Product[] = [
@@ -23,6 +25,8 @@ export const products: Product[] = [
     tags: ["React", "TypeScript", "Tailwind"],
     rating: 4.9,
     reviews: 234,
+    languageFramework: "React",
+    templateType: "Dashboard",
   },
   {
     id: "2",
@@ -35,6 +39,8 @@ export const products: Product[] = [
     tags: ["Next.js", "Stripe", "Prisma"],
     rating: 4.8,
     reviews: 189,
+    languageFramework: "Next.js",
+    templateType: "E-commerce",
   },
   {
     id: "3",
@@ -46,6 +52,7 @@ export const products: Product[] = [
     tags: ["REST API", "GPT-4", "Node.js"],
     rating: 4.7,
     reviews: 156,
+    languageFramework: "Node.js",
   },
   {
     id: "4",
@@ -57,6 +64,8 @@ export const products: Product[] = [
     tags: ["React", "Sanity", "Framer Motion"],
     rating: 4.9,
     reviews: 312,
+    languageFramework: "React",
+    templateType: "Portfolio",
   },
   {
     id: "5",
@@ -68,6 +77,7 @@ export const products: Product[] = [
     tags: ["Discord.js", "TypeScript", "MongoDB"],
     rating: 4.6,
     reviews: 98,
+    languageFramework: "TypeScript",
   },
   {
     id: "6",
@@ -80,6 +90,7 @@ export const products: Product[] = [
     tags: ["Stripe", "PayPal", "Web3"],
     rating: 4.8,
     reviews: 145,
+    languageFramework: "Node.js", // Assuming backend integration
   },
   {
     id: "7",
@@ -91,6 +102,8 @@ export const products: Product[] = [
     tags: ["React", "Tailwind", "Animations"],
     rating: 4.7,
     reviews: 267,
+    languageFramework: "React",
+    templateType: "Landing Page", // Can be a component used in a landing page
   },
   {
     id: "8",
@@ -103,6 +116,34 @@ export const products: Product[] = [
     tags: ["OAuth", "JWT", "RBAC"],
     rating: 4.9,
     reviews: 198,
+    languageFramework: "Node.js", // Backend tool
+    templateType: "Login/Signup", // Can be a component used in a login/signup flow
+  },
+  {
+    id: "9",
+    title: "Blog Template Pro",
+    description: "A modern blog template with markdown support and dynamic routing.",
+    price: 65,
+    image: "https://images.unsplash.com/photo-1488190211105-8b0e65405f64?w=800&auto=format&fit=crop",
+    category: "Template",
+    tags: ["Next.js", "Markdown", "CMS"],
+    rating: 4.7,
+    reviews: 110,
+    languageFramework: "Next.js",
+    templateType: "Blog",
+  },
+  {
+    id: "10",
+    title: "Admin Panel UI Kit",
+    description: "A comprehensive set of UI components for building admin dashboards.",
+    price: 75,
+    image: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&auto=format&fit=crop",
+    category: "Component",
+    tags: ["React", "Tailwind", "UI Kit"],
+    rating: 4.8,
+    reviews: 130,
+    languageFramework: "React",
+    templateType: "Dashboard",
   },
 ];
 
@@ -112,4 +153,24 @@ export const categories = [
   { value: "API", label: "APIs" },
   { value: "Tool", label: "Tools" },
   { value: "Component", label: "Components" },
+];
+
+export const languageFrameworks = [
+  { value: "all", label: "All Frameworks" },
+  { value: "React", label: "React" },
+  { value: "Next.js", label: "Next.js" },
+  { value: "Vue", label: "Vue" },
+  { value: "Node.js", label: "Node.js" },
+  { value: "TypeScript", label: "TypeScript" },
+];
+
+export const templateTypes = [
+  { value: "all", label: "All Template Types" },
+  { value: "Login/Signup", label: "Login/Signup" },
+  { value: "Landing Page", label: "Landing Page" },
+  { value: "Dashboard", label: "Dashboard" },
+  { value: "E-commerce", label: "E-commerce" },
+  { value: "Portfolio", label: "Portfolio" },
+  { value: "Blog", label: "Blog" },
+  { value: "Splash Screen", label: "Splash Screen" },
 ];

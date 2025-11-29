@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, XCircle } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
-import { products, categories } from "@/data/products";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider"; // Import Slider component
+import { products, categories, languageFrameworks, templateTypes } from "@/data/products"; // Import new filter data
 import { cn } from "@/lib/utils";
 
 export default function Store() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 150]); // Max price in current data is 99, set a reasonable max
+  const [selectedLanguageFramework, setSelectedLanguageFramework] = useState("all");
+  const [selectedTemplateType, setSelectedTemplateType] = useState("all");
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -22,8 +26,25 @@ export default function Store() {
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
     const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
     
-    return matchesSearch && matchesCategory && matchesPrice;
+    const matchesLanguageFramework = 
+      selectedLanguageFramework === "all" || 
+      (product.languageFramework && product.languageFramework === selectedLanguageFramework);
+
+    let matchesTemplateType = true;
+    if (selectedCategory === "Template" && selectedTemplateType !== "all") {
+      matchesTemplateType = (product.templateType && product.templateType === selectedTemplateType) || false;
+    }
+    
+    return matchesSearch && matchesCategory && matchesPrice && matchesLanguageFramework && matchesTemplateType;
   });
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("all");
+    setPriceRange([0, 150]);
+    setSelectedLanguageFramework("all");
+    setSelectedTemplateType("all");
+  };
 
   return (
     <Layout>
@@ -51,7 +72,7 @@ export default function Store() {
       {/* Filters & Products */}
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Search & Filter Bar */}
+          {/* Search & Main Category Filter Bar */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,7 +97,10 @@ export default function Store() {
                   key={category.value}
                   variant={selectedCategory === category.value ? "default" : "outline"}
                   size="lg"
-                  onClick={() => setSelectedCategory(category.value)}
+                  onClick={() => {
+                    setSelectedCategory(category.value);
+                    setSelectedTemplateType("all"); // Reset template type when main category changes
+                  }}
                   className="whitespace-nowrap"
                 >
                   {category.label}
@@ -85,15 +109,82 @@ export default function Store() {
             </div>
           </motion.div>
 
+          {/* Advanced Filters */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-card border border-border rounded-xl p-6 mb-8 space-y-6"
+          >
+            <h2 className="font-display text-xl font-bold flex items-center gap-2">
+              <SlidersHorizontal className="h-5 w-5 text-primary" />
+              Advanced Filters
+            </h2>
+
+            {/* Price Range Slider */}
+            <div className="space-y-2">
+              <Label htmlFor="price-range">Price Range: ${priceRange[0]} - ${priceRange[1]}</Label>
+              <Slider
+                id="price-range"
+                min={0}
+                max={200} // Adjust max based on your product data
+                step={5}
+                value={priceRange}
+                onValueChange={(value) => setPriceRange(value as [number, number])}
+                className="w-full"
+              />
+            </div>
+
+            {/* Language/Framework Filter */}
+            <div className="space-y-2">
+              <Label>Language/Framework</Label>
+              <div className="flex flex-wrap gap-2">
+                {languageFrameworks.map((lang) => (
+                  <Button
+                    key={lang.value}
+                    variant={selectedLanguageFramework === lang.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedLanguageFramework(lang.value)}
+                    className="whitespace-nowrap"
+                  >
+                    {lang.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Conditional Template Type Filter */}
+            {selectedCategory === "Template" && (
+              <div className="space-y-2">
+                <Label>Template Type</Label>
+                <div className="flex flex-wrap gap-2">
+                  {templateTypes.map((type) => (
+                    <Button
+                      key={type.value}
+                      variant={selectedTemplateType === type.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTemplateType(type.value)}
+                      className="whitespace-nowrap"
+                    >
+                      {type.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters Button */}
+            <Button variant="ghost" onClick={handleClearFilters} className="text-muted-foreground hover:text-foreground">
+              <XCircle className="h-4 w-4 mr-2" />
+              Clear All Filters
+            </Button>
+          </motion.div>
+
           {/* Results Count */}
           <div className="flex items-center justify-between mb-8">
             <p className="text-muted-foreground">
               Showing <span className="text-foreground font-medium">{filteredProducts.length}</span> products
             </p>
-            <Button variant="ghost" size="sm">
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              More Filters
-            </Button>
           </div>
 
           {/* Products Grid */}
@@ -109,10 +200,7 @@ export default function Store() {
               <Button
                 variant="outline"
                 className="mt-4"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("all");
-                }}
+                onClick={handleClearFilters}
               >
                 Clear Filters
               </Button>
