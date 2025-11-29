@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-// OxaPay API endpoint
-const OXAPAY_API_URL = 'https://api.oxapay.com/merchants/request';
+// OxaPay API endpoint for invoice generation
+const OXAPAY_INVOICE_URL = 'https://api.oxapay.com/v1/payment/invoice';
 
 // Create payment
 router.post('/create', async (req, res) => {
@@ -16,28 +16,31 @@ router.post('/create', async (req, res) => {
     const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const paymentData = {
-      merchant: process.env.OXAPAY_MERCHANT_KEY,
       amount: amount,
-      currency: 'USD',
+      currency: 'USD', // Assuming USD as default, can be dynamic
       lifeTime: 30, // 30 minutes
-      feePaidByPayer: 0,
-      underPaidCover: 2.5,
+      feePaidByPayer: 0, // Merchant pays fee
+      underPaidCoverage: 2.5, // Acceptable inaccuracy
       callbackUrl: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/callback`,
       returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:8080'}/payment-success?orderId=${orderId}`,
       description: productName || 'Digital Product',
       orderId: orderId,
       email: email,
+      sandbox: process.env.NODE_ENV !== 'production', // Use sandbox in development
     };
 
-    const response = await fetch(OXAPAY_API_URL, {
+    const response = await fetch(OXAPAY_INVOICE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'merchant_api_key': process.env.OXAPAY_MERCHANT_API_KEY, // Use the new API key
+      },
       body: JSON.stringify(paymentData),
     });
 
     const data = await response.json();
 
-    if (data.result === 100 && data.payLink) {
+    if (data.status === 1 && data.payLink) { // OxaPay v1 uses 'status: 1' for success
       // Store order in database (you should implement this)
       // await Order.create({ orderId, name, email, amount, status: 'pending' });
 
@@ -45,12 +48,13 @@ router.post('/create', async (req, res) => {
         success: true,
         paymentUrl: data.payLink,
         orderId: orderId,
-        trackId: data.trackId,
+        trackId: data.trackId, // Assuming trackId is still returned
       });
     } else {
       res.status(400).json({
         success: false,
         message: data.message || 'Failed to create payment',
+        errorDetails: data.error, // Include error details from OxaPay if available
       });
     }
   } catch (error) {
@@ -66,9 +70,14 @@ router.post('/callback', async (req, res) => {
 
     console.log('Payment callback received:', { status, orderId, trackId, amount });
 
-    // Verify the callback is from OxaPay (you should add HMAC verification)
+    // IMPORTANT: Verify the callback is from OxaPay using HMAC verification
+    // This is crucial for security and preventing fake payment notifications.
+    // You would typically compare a hash generated from the payload and a shared secret
+    // with a signature provided in the request headers.
+    // Example: const isValid = verifyOxaPaySignature(req.headers['x-oxapay-signature'], req.body);
+    // if (!isValid) { return res.status(403).json({ message: 'Invalid signature' }); }
     
-    if (status === 'Paid') {
+    if (status === 'Paid') { // Assuming 'Paid' is the status for successful payment
       // Update order status in database
       // await Order.findOneAndUpdate({ orderId }, { status: 'paid' });
       
