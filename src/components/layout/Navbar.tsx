@@ -48,8 +48,10 @@ export function Navbar() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex md:items-center md:gap-3">
-            <Button variant="ghost" size="icon">
-              <ShoppingCart className="h-5 w-5" />
+            <Button asChild variant="ghost" size="icon">
+              <Link to="/cart" aria-label="View Cart">
+                <ShoppingCart className="h-5 w-5" />
+              </Link>
             </Button>
           </div>
 
@@ -91,9 +93,11 @@ export function Navbar() {
               ))}
               <div className="border-t border-border my-2" />
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="flex-1">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Cart
+                <Button asChild variant="ghost" size="sm" className="flex-1">
+                  <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Cart
+                  </Link>
                 </Button>
               </div>
             </div>
