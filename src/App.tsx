@@ -3,14 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { FloatingButtons } from "@/components/FloatingButtons";
 import Index from "./pages/Index";
 import Store from "./pages/Store";
 import Services from "./pages/Services";
 import CustomOrder from "./pages/CustomOrder";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import Auth from "./pages/Auth";
-import AuthCallback from "./pages/AuthCallback";
+import Chat from "./pages/Chat";
+import Cart from "./pages/Cart";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +23,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <FloatingButtons />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/store" element={<Store />} />
@@ -28,8 +31,9 @@ const App = () => (
           <Route path="/custom-order" element={<CustomOrder />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
