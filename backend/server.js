@@ -1,12 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const passport = require('passport');
+// const passport = require('passport'); // Removed passport
 require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
+// const authRoutes = require('./routes/auth'); // Removed auth routes
 const paymentRoutes = require('./routes/payment');
-require('./config/passport');
+// require('./config/passport'); // Removed passport config
 const app = express();
 
 // Middleware
@@ -15,10 +15,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(passport.initialize());
+// app.use(passport.initialize()); // Removed passport initialization
 
 // Routes
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes); // Removed auth routes
 app.use('/api/payment', paymentRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
