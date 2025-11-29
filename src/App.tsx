@@ -14,6 +14,7 @@ import Chat from "./pages/Chat";
 import Cart from "./pages/Cart";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
+import { CartProvider } from "@/context/CartContext";
 
 const queryClient = new QueryClient();
 
@@ -22,21 +23,23 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <FloatingButtons />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/store" element={<Store />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/custom-order" element={<CustomOrder />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/payment-success" element={<PaymentSuccess />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <CartProvider>
+        <BrowserRouter>
+          <FloatingButtons />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/store" element={<Store />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/custom-order" element={<CustomOrder />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

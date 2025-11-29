@@ -3,6 +3,8 @@ import { ShoppingCart, Eye, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   id: string;
@@ -18,6 +20,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({
+  id,
   title,
   description,
   price,
@@ -29,6 +32,12 @@ export function ProductCard({
   reviews,
 }: ProductCardProps) {
   const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
+  const { addItemToCart } = useCart();
+
+  const handleAddToCart = () => {
+    addItemToCart({ id, title, description, price, originalPrice, image, category, tags, rating, reviews });
+    toast.success(`${title} added to cart!`);
+  };
 
   return (
     <motion.div
@@ -52,7 +61,7 @@ export function ProductCard({
             <Button variant="glass" size="icon">
               <Eye className="h-5 w-5" />
             </Button>
-            <Button variant="hero" size="icon">
+            <Button variant="hero" size="icon" onClick={handleAddToCart}>
               <ShoppingCart className="h-5 w-5" />
             </Button>
           </div>
@@ -112,7 +121,7 @@ export function ProductCard({
                 </span>
               )}
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleAddToCart}>
               Add to Cart
             </Button>
           </div>

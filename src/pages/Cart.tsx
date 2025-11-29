@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, CreditCard, ArrowLeft } from "lucide-react";
+import { ShoppingCart, CreditCard, ArrowLeft, MinusCircle, PlusCircle, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useCart } from "@/context/CartContext";
 
 const Cart = () => {
+  const { cartItems, removeItemFromCart, addItemToCart, clearCart, cartTotal } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -18,19 +20,17 @@ const Cart = () => {
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-  // Demo cart item
-  const cartItem = {
-    name: "Digital Product Bundle",
-    price: 49.99,
-    description: "Complete digital resource pack",
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty. Please add items before checking out.");
+      return;
+    }
 
     if (!formData.name.trim() || !formData.email.trim()) {
       toast.error("Please fill in all fields");
@@ -53,8 +53,8 @@ const Cart = () => {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          amount: cartItem.price,
-          productName: cartItem.name,
+          amount: cartTotal,
+          productName: cartItems.map(item => `${item.title} (x${item.quantity})`).join(', '),
         }),
       });
 
@@ -63,6 +63,7 @@ const Cart = () => {
       if (response.ok && data.paymentUrl) {
         // Redirect to OxaPay payment page
         window.location.href = data.paymentUrl;
+        clearCart(); // Clear cart after successful payment initiation
       } else {
         toast.error(data.message || "Failed to create payment");
       }
@@ -96,31 +97,53 @@ const Cart = () => {
             </h1>
 
             <div className="grid md:grid-cols-2 gap-8">
-              {/* Cart Item */}
+              {/* Cart Items */}
               <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">Order Summary</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-lg">Your Items</CardTitle>
+                  {cartItems.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive hover:text-destructive/80">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Clear Cart
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start pb-4 border-b border-border">
-                      <div>
-                        <h3 className="font-medium">{cartItem.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {cartItem.description}
-                        </p>
+                  {cartItems.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">Your cart is empty.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {cartItems.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between border-b border-border pb-4 last:border-b-0 last:pb-0">
+                          <div className="flex items-center gap-4">
+                            <img src={item.image} alt={item.title} className="w-16 h-16 object-cover rounded-md" />
+                            <div>
+                              <h3 className="font-medium">{item.title}</h3>
+                              <p className="text-sm text-muted-foreground line-clamp-1">{item.description}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItemFromCart(item.id)}>
+                                  <MinusCircle className="h-4 w-4" />
+                                </Button>
+                                <span className="text-sm font-medium">{item.quantity}</span>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => addItemToCart(item)}>
+                                  <PlusCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="font-semibold text-primary">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between items-center pt-2 border-t border-border">
+                        <span className="text-lg font-semibold">Total</span>
+                        <span className="text-2xl font-bold text-primary">
+                          ${cartTotal.toFixed(2)}
+                        </span>
                       </div>
-                      <span className="font-semibold text-primary">
-                        ${cartItem.price}
-                      </span>
                     </div>
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-lg font-semibold">Total</span>
-                      <span className="text-2xl font-bold text-primary">
-                        ${cartItem.price}
-                      </span>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -164,7 +187,7 @@ const Cart = () => {
                     <Button
                       type="submit"
                       className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                      disabled={isLoading}
+                      disabled={isLoading || cartItems.length === 0}
                     >
                       {isLoading ? (
                         <span className="flex items-center gap-2">
