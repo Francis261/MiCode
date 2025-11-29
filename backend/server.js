@@ -5,8 +5,8 @@ const passport = require('passport');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
+const paymentRoutes = require('./routes/payment');
 require('./config/passport');
-
 const app = express();
 
 // Middleware
@@ -19,7 +19,7 @@ app.use(passport.initialize());
 
 // Routes
 app.use('/api/auth', authRoutes);
-
+app.use('/api/payment', paymentRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
