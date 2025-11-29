@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingCart, User } from "lucide-react";
+import { Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -51,10 +51,6 @@ export function Navbar() {
             <Button variant="ghost" size="icon">
               <ShoppingCart className="h-5 w-5" />
             </Button>
-            <Button variant="hero-outline" size="sm">
-              <User className="h-4 w-4" />
-              Sign In
-            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -98,10 +94,6 @@ export function Navbar() {
                 <Button variant="ghost" size="sm" className="flex-1">
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Cart
-                </Button>
-                <Button variant="hero" size="sm" className="flex-1">
-                  <User className="h-4 w-4 mr-2" />
-                  Sign In
                 </Button>
               </div>
             </div>
