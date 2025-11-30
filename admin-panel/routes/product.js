@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product'); // Ensure Product model is accessible
+const Product = require('../../backend/models/Product'); // Corrected path
 
 // Get all products
 router.get('/', async (req, res) => {

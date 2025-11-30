@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const AdminUser = require('./models/AdminUser');
-const Product = require('../backend/models/Product'); // Import Product model from main backend
+const Product = require('../backend/models/Product'); // Corrected path
 
 // Import admin routes
 const adminProductRoutes = require('./routes/product');
