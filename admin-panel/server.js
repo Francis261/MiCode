@@ -210,9 +210,8 @@ app.get('/admin-app/*', (req, res) => {
 const PORT = process.env.ADMIN_BACKEND_PORT || 5001;
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
+  serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
 })
   .then(() => {
     console.log('Connected to MongoDB for Admin Panel');
