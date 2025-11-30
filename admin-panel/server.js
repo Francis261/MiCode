@@ -7,6 +7,10 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const AdminUser = require('./models/AdminUser');
+const Product = require('../backend/models/Product'); // Import Product model from main backend
+
+// Import admin routes
+const adminProductRoutes = require('./routes/product');
 
 const app = express();
 
@@ -137,14 +141,64 @@ app.post('/admin/login', async (req, res) => {
   }
 });
 
-// Example Protected Admin Route
-app.get('/admin/dashboard-data', authenticateToken, (req, res) => {
-  // In a real app, you'd check req.user.permissions here
-  if (req.user.permissions.dashboard === '-' && req.user.role !== 'superadmin') {
-    return res.status(403).json({ message: 'Access denied' });
+// Mount product routes for admin panel, protected by authentication
+app.use('/api/products', authenticateToken, adminProductRoutes);
+
+// Dashboard Data Endpoints (Protected)
+app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+  try {
+    // Simulate fetching real data
+    const totalProducts = await Product.countDocuments();
+    const activeProducts = await Product.countDocuments({ isHidden: false });
+    
+    // Dummy data for sales and users as we don't have these models
+    const totalSales = (Math.random() * 100000 + 50000).toFixed(2); // $50k - $150k
+    const newUsers = Math.floor(Math.random() * 1000 + 100); // 100 - 1100 new users
+
+    res.json({
+      totalSales: `$${totalSales}`,
+      newUsers: `+${newUsers}`,
+      activeProducts: activeProducts,
+      totalProducts: totalProducts,
+      salesChange: `+${(Math.random() * 10 + 10).toFixed(1)}% from last month`, // 10-20%
+      usersChange: `+${(Math.random() * 100 + 50).toFixed(1)}% from last month`, // 50-150%
+      productsChange: `+${Math.floor(Math.random() * 5 + 1)} since last month`, // 1-5 products
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-  res.json({ message: `Welcome to the dashboard, ${req.user.email}!`, data: 'Some sensitive dashboard data.' });
 });
+
+app.get('/api/dashboard/sales-overview', authenticateToken, async (req, res) => {
+  // Simulate sales data over time
+  const salesData = [
+    { name: 'Jan', sales: Math.floor(Math.random() * 3000 + 2000) },
+    { name: 'Feb', sales: Math.floor(Math.random() * 3000 + 2000) },
+    { name: 'Mar', sales: Math.floor(Math.random() * 3000 + 2000) },
+    { name: 'Apr', sales: Math.floor(Math.random() * 3000 + 2000) },
+    { name: 'May', sales: Math.floor(Math.random() * 3000 + 2000) },
+    { name: 'Jun', sales: Math.floor(Math.random() * 3000 + 2000) },
+    { name: 'Jul', sales: Math.floor(Math.random() * 3000 + 2000) },
+  ];
+  res.json(salesData);
+});
+
+app.get('/api/dashboard/product-performance', authenticateToken, async (req, res) => {
+  try {
+    // Fetch top 5 products by reviews (as a proxy for performance)
+    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5);
+    const productPerformanceData = topProducts.map(p => ({
+      name: p.title,
+      sales: Math.floor(Math.random() * 100 + 50), // Simulate sales count for each product
+    }));
+    res.json(productPerformanceData);
+  } catch (error) {
+    console.error('Error fetching product performance:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 // Catch-all for the React app: any route not matched by API will serve the React app's index.html
 app.get('/admin-app/*', (req, res) => {
