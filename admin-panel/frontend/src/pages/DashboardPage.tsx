@@ -2,7 +2,38 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
-import { LineChart, BarChart, Users, Package, DollarSign } from 'lucide-react'; // Added DollarSign
+import { Users, Package, DollarSign } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from 'recharts';
+
+// Dummy data for charts
+const salesData = [
+  { name: 'Jan', sales: 4000 },
+  { name: 'Feb', sales: 3000 },
+  { name: 'Mar', sales: 5000 },
+  { name: 'Apr', sales: 4500 },
+  { name: 'May', sales: 6000 },
+  { name: 'Jun', sales: 5500 },
+  { name: 'Jul', sales: 7000 },
+];
+
+const productPerformanceData = [
+  { name: 'SaaS Dashboard', sales: 150 },
+  { name: 'E-commerce Kit', sales: 120 },
+  { name: 'AI Content API', sales: 90 },
+  { name: 'Portfolio Builder', sales: 110 },
+  { name: 'Discord Bot', sales: 70 },
+];
 
 export default function DashboardPage() {
   const { admin } = useAuth();
@@ -56,10 +87,23 @@ export default function DashboardPage() {
               <CardTitle>Sales Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <LineChart className="h-12 w-12" />
-                <p className="ml-2">Chart data coming soon...</p>
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: '0.5rem',
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
           <Card>
@@ -67,10 +111,23 @@ export default function DashboardPage() {
               <CardTitle>Product Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <BarChart className="h-12 w-12" />
-                <p className="ml-2">Chart data coming soon...</p>
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={productPerformanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: '0.5rem',
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="sales" fill="hsl(var(--accent))" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
