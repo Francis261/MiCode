@@ -18,10 +18,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure EJS as the view engine
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
 // Serve static files from the React build directory
 app.use('/admin-app', express.static(path.join(__dirname, 'frontend/dist')));
 
@@ -78,46 +74,43 @@ app.get('/v1/adm/health', (req, res) => {
   res.json({ status: 'ok', message: 'Admin backend is running' });
 });
 
-// Initial Access Page (Server-Side Rendered)
+// Redirect root to the React app
 app.get('/', (req, res) => {
-  res.render('access-key', { message: null });
+  res.redirect('/admin-app');
 });
 
-// Handle Initial Access Key Verification
+// Handle Initial Access Key Verification (now returns JSON only)
 app.post('/verify-access', async (req, res) => {
   const { adminId, accessKey } = req.body;
 
   if (!adminId || !accessKey) {
-    return res.render('access-key', { message: 'Please enter both Admin ID and Access Key.' });
+    return res.status(400).json({ success: false, message: 'Please enter both Admin ID and Access Key.' });
   }
 
   // Verify the provided Admin ID against the SUPER_ADMIN_ID from .env
   if (adminId !== process.env.SUPER_ADMIN_ID) {
-    return res.render('access-key', { message: 'Invalid Admin ID.' });
+    return res.status(401).json({ success: false, message: 'Invalid Admin ID.' });
   }
 
   // Verify the provided Access Key against the SUPER_ADMIN_KEY from .env
   if (accessKey !== process.env.SUPER_ADMIN_KEY) {
-    return res.render('access-key', { message: 'Invalid Access Key.' });
+    return res.status(401).json({ success: false, message: 'Invalid Access Key.' });
   }
 
   try {
     // If both ID and Key are valid, fetch the super admin user to generate a token
     const admin = await AdminUser.findOne({ email: process.env.SUPER_ADMIN_EMAIL });
     if (!admin) {
-      // This case should ideally not happen if seeding worked, but good for robustness
-      return res.render('access-key', { message: 'Super Admin user not found in database.' });
+      return res.status(500).json({ success: false, message: 'Super Admin user not found in database.' });
     }
 
     const tempToken = jwt.sign({ id: admin._id, role: admin.role, verified: true }, process.env.JWT_SECRET, { expiresIn: '15m' });
     
-    // Instead of rendering EJS, redirect to the React app with the tempToken
-    // The React app will then handle the login flow.
     res.json({ success: true, message: 'Access key verified. Proceed to login.', tempToken, adminId: admin._id });
 
   } catch (error) {
     console.error('Error during access key verification:', error);
-    res.render('access-key', { message: 'An error occurred during verification.' });
+    res.status(500).json({ success: false, message: 'An error occurred during verification.' });
   }
 });
 
@@ -153,8 +146,8 @@ app.get('/admin/dashboard-data', authenticateToken, (req, res) => {
   res.json({ message: `Welcome to the dashboard, ${req.user.email}!`, data: 'Some sensitive dashboard data.' });
 });
 
-// Catch-all for the React app: any route not matched by API or EJS will serve the React app's index.html
-app.get('/admin/*', (req, res) => {
+// Catch-all for the React app: any route not matched by API will serve the React app's index.html
+app.get('/admin-app/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
 });
 
