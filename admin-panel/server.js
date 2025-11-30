@@ -148,8 +148,8 @@ app.use('/api/products', authenticateToken, adminProductRoutes);
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     // Simulate fetching real data
-    const totalProducts = await Product.countDocuments();
-    const activeProducts = await Product.countDocuments({ isHidden: false });
+    const totalProducts = await Product.countDocuments().maxTimeMS(15000); // Added maxTimeMS
+    const activeProducts = await Product.countDocuments({ isHidden: false }).maxTimeMS(15000); // Added maxTimeMS
     
     // Dummy data for sales and users as we don't have these models
     const totalSales = (Math.random() * 100000 + 50000).toFixed(2); // $50k - $150k
@@ -187,7 +187,7 @@ app.get('/api/dashboard/sales-overview', authenticateToken, async (req, res) => 
 app.get('/api/dashboard/product-performance', authenticateToken, async (req, res) => {
   try {
     // Fetch top 5 products by reviews (as a proxy for performance)
-    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5);
+    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5).maxTimeMS(15000); // Added maxTimeMS
     const productPerformanceData = topProducts.map(p => ({
       name: p.title,
       sales: Math.floor(Math.random() * 100 + 50), // Simulate sales count for each product
