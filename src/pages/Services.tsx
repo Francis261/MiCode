@@ -52,15 +52,7 @@ const pricingPlans = [
 export default function Services() {
   const { data: services, isLoading, error } = useServices(); // Fetch services
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <p className="text-destructive">Error loading services: {error.message}</p>
-        </div>
-      </Layout>
-    );
-  }
+  const showSkeletons = isLoading || (error && !services);
 
   return (
     <Layout>
@@ -110,8 +102,11 @@ export default function Services() {
             </p>
           </div>
 
+          {error && services && (
+            <p className="text-destructive text-center py-2">Failed to refresh services. Showing cached data. Retrying...</p>
+          )}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoading
+            {showSkeletons
               ? Array.from({ length: 8 }).map((_, i) => <ServiceCardSkeleton key={i} />)
               : services?.map((service, index) => (
                   <ServiceCard key={service._id} {...service} delay={index * 0.1} />

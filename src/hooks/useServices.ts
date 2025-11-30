@@ -33,5 +33,7 @@ export function useServices() {
         icon: getLucideIcon(service.icon), // Now correctly assigns LucideIcon
       }));
     },
+    refetchInterval: 120000, // Refetch every 2 minutes (120,000 ms)
+    refetchIntervalInBackground: true, // Keep refetching even if window is not focused
   });
 }

@@ -77,15 +77,7 @@ export default function Store() {
     setSelectedTemplateType("all");
   };
 
-  if (error) {
-    return (
-      <Layout>
-        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <p className="text-destructive">Error loading products: {error.message}</p>
-        </div>
-      </Layout>
-    );
-  }
+  const showSkeletons = isLoading || (error && !products);
 
   return (
     <Layout>
@@ -228,8 +220,11 @@ export default function Store() {
             </p>
           </div>
 
+          {error && products && (
+            <p className="text-destructive text-center py-2">Failed to refresh products. Showing cached data. Retrying...</p>
+          )}
           {/* Products Grid */}
-          {isLoading ? (
+          {showSkeletons ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />

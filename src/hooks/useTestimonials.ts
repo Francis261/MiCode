@@ -15,5 +15,7 @@ export function useTestimonials() {
   return useQuery<Testimonial[], Error>({
     queryKey: ["testimonials"],
     queryFn: () => fetcher<Testimonial[]>("/testimonials"),
+    refetchInterval: 120000, // Refetch every 2 minutes (120,000 ms)
+    refetchIntervalInBackground: true, // Keep refetching even if window is not focused
   });
 }

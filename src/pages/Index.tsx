@@ -40,15 +40,8 @@ export default function Index() {
   const { data: products, isLoading: isLoadingProducts, error: productsError } = useProducts();
   const { data: testimonials, isLoading: isLoadingTestimonials, error: testimonialsError } = useTestimonials();
 
-  if (productsError || testimonialsError) {
-    return (
-      <Layout>
-        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <p className="text-destructive">Error loading content: {productsError?.message || testimonialsError?.message}</p>
-        </div>
-      </Layout>
-    );
-  }
+  const showProductSkeletons = isLoadingProducts || (productsError && !products);
+  const showTestimonialSkeletons = isLoadingTestimonials || (testimonialsError && !testimonials);
 
   return (
     <Layout>
@@ -195,8 +188,11 @@ export default function Index() {
             </Button>
           </div>
 
+          {productsError && products && (
+            <p className="text-destructive text-center py-2">Failed to refresh products. Showing cached data. Retrying...</p>
+          )}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoadingProducts
+            {showProductSkeletons
               ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
               : products?.slice(0, 4).map((product) => <ProductCard key={product._id} {...product} />)}
           </div>
@@ -213,7 +209,7 @@ export default function Index() {
             className="relative rounded-3xl overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-primary opacity-90" />
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIxLjUiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZwdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIxLjUiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
             
             <div className="relative px-8 py-16 md:px-16 md:py-24 text-center">
               <h2 className="font-display text-3xl md:text-5xl font-bold text-primary-foreground mb-6">
@@ -257,8 +253,11 @@ export default function Index() {
             </motion.p>
           </div>
 
+          {testimonialsError && testimonials && (
+            <p className="text-destructive text-center py-2">Failed to refresh testimonials. Showing cached data. Retrying...</p>
+          )}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {isLoadingTestimonials
+            {showTestimonialSkeletons
               ? Array.from({ length: 4 }).map((_, i) => <TestimonialCardSkeleton key={i} />)
               : testimonials?.map((testimonial, index) => (
                   <TestimonialCard key={testimonial._id} {...testimonial} delay={index * 0.1} />
