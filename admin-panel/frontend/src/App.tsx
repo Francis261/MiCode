@@ -9,9 +9,9 @@ import { toast } from 'sonner'; // Import toast for messages
 import AccessVerificationPage from './pages/AccessVerificationPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import ProductsPage from './pages/ProductsPage'; // Import the new ProductsPage
 
 // Placeholder pages for future implementation
-const ProductsPage = () => <DashboardPage />; // Replace with actual ProductsPage
 const ServicesPage = () => <DashboardPage />; // Replace with actual ServicesPage
 const TestimonialsPage = () => <DashboardPage />; // Replace with actual TestimonialsPage
 const CustomOrdersPage = () => <DashboardPage />; // Replace with actual CustomOrdersPage

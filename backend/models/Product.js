@@ -13,6 +13,7 @@ const productSchema = new mongoose.Schema({
   reviews: { type: Number, required: true },
   languageFramework: { type: String },
   templateType: { type: String },
+  isHidden: { type: Boolean, default: false }, // New field for admin panel
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

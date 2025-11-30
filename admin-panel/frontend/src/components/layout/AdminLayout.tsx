@@ -1,11 +1,12 @@
 import { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, LogOut, UserCircle, LayoutDashboard, Package, Settings, Users, MessageSquareText, ShoppingBag, DollarSign } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils'; // Import cn for conditional classnames
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ const navItems = [
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { admin, logout, checkPermission } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // Get current location
 
   const handleLogout = () => {
     logout();
@@ -58,7 +60,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
+                    location.pathname === item.to
+                      ? "bg-muted text-primary"
+                      : "text-muted-foreground"
+                  )}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.label}
@@ -101,7 +108,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   <Link
                     key={item.to}
                     to={item.to}
-                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-primary"
+                    onClick={() => { /* Close sheet if needed */ }}
+                    className={cn(
+                      "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-primary",
+                      location.pathname === item.to
+                        ? "bg-muted text-primary"
+                        : "text-muted-foreground"
+                    )}
                   >
                     <item.icon className="h-5 w-5" />
                     {item.label}
