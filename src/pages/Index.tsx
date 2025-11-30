@@ -5,9 +5,11 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { TestimonialCard } from "@/components/TestimonialCard";
+import { ProductCardSkeleton } from "@/components/ProductCardSkeleton"; // Import skeleton
+import { TestimonialCardSkeleton } from "@/components/TestimonialCardSkeleton"; // Import skeleton
 import heroBg from "@/assets/hero-bg.jpg";
-import { useProducts } from "@/hooks/useProducts"; // Import useProducts hook
-import { useTestimonials } from "@/hooks/useTestimonials"; // Import useTestimonials hook
+import { useProducts } from "@/hooks/useProducts";
+import { useTestimonials } from "@/hooks/useTestimonials";
 
 const stats = [
   { value: "500+", label: "Products Sold" },
@@ -37,16 +39,6 @@ const features = [
 export default function Index() {
   const { data: products, isLoading: isLoadingProducts, error: productsError } = useProducts();
   const { data: testimonials, isLoading: isLoadingTestimonials, error: testimonialsError } = useTestimonials();
-
-  if (isLoadingProducts || isLoadingTestimonials) {
-    return (
-      <Layout>
-        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <p className="text-muted-foreground">Loading content...</p>
-        </div>
-      </Layout>
-    );
-  }
 
   if (productsError || testimonialsError) {
     return (
@@ -204,9 +196,9 @@ export default function Index() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products?.slice(0, 4).map((product) => (
-              <ProductCard key={product._id} {...product} />
-            ))}
+            {isLoadingProducts
+              ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
+              : products?.slice(0, 4).map((product) => <ProductCard key={product._id} {...product} />)}
           </div>
         </div>
       </section>
@@ -266,9 +258,11 @@ export default function Index() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testimonials?.map((testimonial, index) => (
-              <TestimonialCard key={testimonial._id} {...testimonial} delay={index * 0.1} />
-            ))}
+            {isLoadingTestimonials
+              ? Array.from({ length: 4 }).map((_, i) => <TestimonialCardSkeleton key={i} />)
+              : testimonials?.map((testimonial, index) => (
+                  <TestimonialCard key={testimonial._id} {...testimonial} delay={index * 0.1} />
+                ))}
           </div>
         </div>
       </section>
