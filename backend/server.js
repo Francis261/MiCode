@@ -8,10 +8,10 @@ const Product = require('./models/Product');
 const Service = require('./models/Service');
 const Testimonial = require('./models/Testimonial');
 
-// Import data from frontend (for seeding)
-const { products } = require('../src/data/products');
-const { services } = require('../src/data/services');
-const { testimonials } = require('../src/data/testimonials');
+// Import data from backend/data (for seeding)
+const { products } = require('./data/products');
+const { services } = require('./data/services');
+const { testimonials } = require('./data/testimonials');
 
 // Import routes
 const productRoutes = require('./routes/product');
@@ -45,10 +45,8 @@ const seedDatabase = async () => {
     const productCount = await Product.countDocuments();
     if (productCount === 0) {
       console.log('Seeding products...');
-      // Map LucideIcon components to string names for storage
       const productsToInsert = products.map(p => ({
         ...p,
-        // Ensure 'id' is explicitly set for products as it's used for lookup
         id: p.id 
       }));
       await Product.insertMany(productsToInsert);
@@ -58,10 +56,9 @@ const seedDatabase = async () => {
     const serviceCount = await Service.countDocuments();
     if (serviceCount === 0) {
       console.log('Seeding services...');
-      // Map LucideIcon components to string names for storage
       const servicesToInsert = services.map(s => ({
         ...s,
-        icon: s.icon.displayName || s.icon.name // Store icon name as string
+        // The icon name is already a string in backend/data/services.js
       }));
       await Service.insertMany(servicesToInsert);
       console.log('Services seeded successfully.');
