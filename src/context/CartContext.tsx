@@ -1,21 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-// Define the Product interface as it comes from the backend
-interface Product {
-  _id: string; // MongoDB ID
-  id: string; // Original static ID, if still needed for some logic
-  title: string;
-  description: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  tags: string[];
-  rating: number;
-  reviews: number;
-  languageFramework?: string;
-  templateType?: string;
-}
+import { Product } from "@/types/product"; // Import Product interface from types
 
 interface CartItem extends Product {
   quantity: number;

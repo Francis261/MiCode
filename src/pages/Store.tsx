@@ -7,9 +7,37 @@ import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { categories, languageFrameworks, templateTypes } from "@/data/products"; // Keep filter data
 import { cn } from "@/lib/utils";
 import { useProducts } from "@/hooks/useProducts"; // Import useProducts hook
+
+// Filter data (moved from src/data/products.ts)
+const categories = [
+  { value: "all", label: "All" },
+  { value: "Template", label: "Templates" },
+  { value: "API", label: "APIs" },
+  { value: "Component", label: "Components" },
+  { value: "Tool", label: "Tools" },
+];
+
+const languageFrameworks = [
+  { value: "all", label: "All" },
+  { value: "React", label: "React" },
+  { value: "Next.js", label: "Next.js" },
+  { value: "Node.js", label: "Node.js" },
+  { value: "TypeScript", label: "TypeScript" },
+  { value: "Vue", label: "Vue" },
+  { value: "Python", label: "Python" },
+];
+
+const templateTypes = [
+  { value: "all", label: "All" },
+  { value: "Dashboard", label: "Dashboard" },
+  { value: "E-commerce", label: "E-commerce" },
+  { value: "Portfolio", label: "Portfolio" },
+  { value: "Blog", label: "Blog" },
+  { value: "Landing Page", label: "Landing Page" },
+  { value: "Login/Signup", label: "Login/Signup" },
+];
 
 export default function Store() {
   const { data: products, isLoading, error } = useProducts(); // Fetch products

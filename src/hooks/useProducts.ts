@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
-import { Product } from "@/data/products"; // Re-using the Product interface
+import { Product } from "@/types/product"; // Import Product interface from types
 
 export function useProducts() {
   return useQuery<Product[], Error>({

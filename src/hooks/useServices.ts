@@ -11,6 +11,11 @@ interface Service {
   features: string[];
 }
 
+// Interface for the service data *after* icon mapping
+interface MappedService extends Omit<Service, 'icon'> {
+  icon: LucideIcon;
+}
+
 // Helper to map string icon name to LucideIcon component
 const getLucideIcon = (iconName: string): LucideIcon => {
   const Icon = (LucideIcons as any)[iconName];
@@ -18,14 +23,14 @@ const getLucideIcon = (iconName: string): LucideIcon => {
 };
 
 export function useServices() {
-  return useQuery<Service[], Error>({
+  return useQuery<MappedService[], Error>({ // Use MappedService for the return type
     queryKey: ["services"],
     queryFn: async () => {
       const data = await fetcher<Service[]>("/services");
       // Map icon string to LucideIcon component for frontend use
       return data.map(service => ({
         ...service,
-        icon: getLucideIcon(service.icon) as any, // Cast to any to match ServiceCardProps
+        icon: getLucideIcon(service.icon), // Now correctly assigns LucideIcon
       }));
     },
   });

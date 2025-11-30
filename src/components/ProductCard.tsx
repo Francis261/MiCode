@@ -5,23 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
+import { Product } from "@/types/product"; // Import Product interface from types
 
-// Re-using the Product interface from data/products.ts, but adding _id
-interface ProductCardProps {
-  _id: string; // MongoDB ID
-  id: string; // Original static ID, if still needed for some logic
-  title: string;
-  description: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  tags: string[];
-  rating: number;
-  reviews: number;
-  languageFramework?: string;
-  templateType?: string;
-}
+// ProductCardProps now extends the Product interface
+interface ProductCardProps extends Product {}
 
 export function ProductCard({
   _id,
