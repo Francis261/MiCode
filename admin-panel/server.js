@@ -147,7 +147,7 @@ app.use('/api/products', authenticateToken, adminProductRoutes);
 // Dashboard Data Endpoints (Protected)
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
-    // Simulate fetching real data
+    console.log('Fetching dashboard stats. Mongoose connection state:', mongoose.connection.readyState);
     const totalProducts = await Product.countDocuments();
     const activeProducts = await Product.countDocuments({ isHidden: false });
     
@@ -186,6 +186,7 @@ app.get('/api/dashboard/sales-overview', authenticateToken, async (req, res) => 
 
 app.get('/api/dashboard/product-performance', authenticateToken, async (req, res) => {
   try {
+    console.log('Fetching product performance. Mongoose connection state:', mongoose.connection.readyState);
     // Fetch top 5 products by reviews (as a proxy for performance)
     const topProducts = await Product.find().sort({ reviews: -1 }).limit(5);
     const productPerformanceData = topProducts.map(p => ({
@@ -211,7 +212,7 @@ const PORT = process.env.ADMIN_BACKEND_PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
 
 const connectWithRetry = () => {
-  console.log('Attempting to connect to MongoDB...');
+  console.log('Attempting to connect to MongoDB with URI:', MONGODB_URI); // Log the URI
   mongoose.connect(MONGODB_URI, {
     bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
     serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
@@ -239,8 +240,6 @@ mongoose.connection.on('error', err => {
 
 mongoose.connection.on('disconnected', () => {
   console.warn('Mongoose disconnected from MongoDB. Attempting to reconnect...');
-  // Mongoose's built-in reconnection logic often handles this,
-  // but if not, the `connectWithRetry` could be adapted here too.
 });
 
 mongoose.connection.on('reconnected', () => {
