@@ -2,11 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
-const bcrypt = require('bcryptjs'); // Import bcryptjs
-const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const AdminUser = require('./models/AdminUser'); // Import AdminUser model
+const AdminUser = require('./models/AdminUser');
 
 const app = express();
 
@@ -39,13 +39,13 @@ const authenticateToken = (req, res, next) => {
 // Data Seeding Function for Admin Users
 const seedAdminUsers = async () => {
   try {
-    const superAdminExists = await AdminUser.findOne({ email: process.env.SUPER_ADMIN_EMAIL });
+    let superAdmin = await AdminUser.findOne({ email: process.env.SUPER_ADMIN_EMAIL });
 
-    if (!superAdminExists) {
+    if (!superAdmin) {
       console.log('Seeding initial Super Admin...');
-      const superAdmin = new AdminUser({
+      superAdmin = new AdminUser({
         email: process.env.SUPER_ADMIN_EMAIL,
-        password: process.env.SUPER_ADMIN_PASSWORD, // Password will be hashed by pre-save hook
+        password: process.env.SUPER_ADMIN_PASSWORD,
         role: 'superadmin',
         permissions: {
           dashboard: '*',
@@ -61,6 +61,9 @@ const seedAdminUsers = async () => {
       });
       await superAdmin.save();
       console.log('Super Admin seeded successfully.');
+      console.log(`IMPORTANT: Super Admin ID is: ${superAdmin._id}. Please add this to your admin-panel/.env file as SUPER_ADMIN_ID.`);
+    } else {
+      console.log(`Super Admin already exists. ID: ${superAdmin._id}`);
     }
   } catch (error) {
     console.error('Error seeding admin users:', error);
@@ -85,23 +88,29 @@ app.post('/verify-access', async (req, res) => {
     return res.render('access-key', { message: 'Please enter both Admin ID and Access Key.' });
   }
 
+  // Verify the provided Admin ID against the SUPER_ADMIN_ID from .env
+  if (adminId !== process.env.SUPER_ADMIN_ID) {
+    return res.render('access-key', { message: 'Invalid Admin ID.' });
+  }
+
+  // Verify the provided Access Key against the SUPER_ADMIN_KEY from .env
   if (accessKey !== process.env.SUPER_ADMIN_KEY) {
     return res.render('access-key', { message: 'Invalid Access Key.' });
   }
 
   try {
-    const admin = await AdminUser.findById(adminId); // Assuming adminId is the MongoDB _id
+    // If both ID and Key are valid, fetch the super admin user to generate a token
+    const admin = await AdminUser.findOne({ email: process.env.SUPER_ADMIN_EMAIL });
     if (!admin) {
-      return res.render('access-key', { message: 'Admin ID not found.' });
+      // This case should ideally not happen if seeding worked, but good for robustness
+      return res.render('access-key', { message: 'Super Admin user not found in database.' });
     }
 
-    // If ID and Key are valid, generate a temporary token for the React app to proceed to login
     const tempToken = jwt.sign({ id: admin._id, role: admin.role, verified: true }, process.env.JWT_SECRET, { expiresIn: '15m' });
     
-    // Redirect to the admin frontend (which will be a React app) with the token
-    // For now, we'll just send a success message and the token.
-    // In the next step, we'll set up the React app to receive this.
-    res.json({ success: true, message: 'Access key verified. Proceed to login.', tempToken });
+    // In a real scenario, you would redirect to the React admin frontend with this token
+    // For now, we'll send a JSON response indicating success.
+    res.json({ success: true, message: 'Access key verified. Proceed to login.', tempToken, adminId: admin._id });
 
   } catch (error) {
     console.error('Error during access key verification:', error);
