@@ -148,8 +148,8 @@ app.use('/api/products', authenticateToken, adminProductRoutes);
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     // Simulate fetching real data
-    const totalProducts = await Product.countDocuments().maxTimeMS(15000); // Added maxTimeMS
-    const activeProducts = await Product.countDocuments({ isHidden: false }).maxTimeMS(15000); // Added maxTimeMS
+    const totalProducts = await Product.countDocuments();
+    const activeProducts = await Product.countDocuments({ isHidden: false });
     
     // Dummy data for sales and users as we don't have these models
     const totalSales = (Math.random() * 100000 + 50000).toFixed(2); // $50k - $150k
@@ -187,7 +187,7 @@ app.get('/api/dashboard/sales-overview', authenticateToken, async (req, res) => 
 app.get('/api/dashboard/product-performance', authenticateToken, async (req, res) => {
   try {
     // Fetch top 5 products by reviews (as a proxy for performance)
-    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5).maxTimeMS(15000); // Added maxTimeMS
+    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5);
     const productPerformanceData = topProducts.map(p => ({
       name: p.title,
       sales: Math.floor(Math.random() * 100 + 50), // Simulate sales count for each product
@@ -208,22 +208,29 @@ app.get('/admin-app/*', (req, res) => {
 
 // Connect to MongoDB and start server
 const PORT = process.env.ADMIN_BACKEND_PORT || 5001;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace', {
-  bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
-  serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
-})
-  .then(() => {
-    console.log('Connected to MongoDB for Admin Panel');
-    seedAdminUsers(); // Seed admin data after successful connection
-    app.listen(PORT, () => {
-      console.log(`Admin backend running on port ${PORT}`);
-    });
+const connectWithRetry = () => {
+  console.log('Attempting to connect to MongoDB...');
+  mongoose.connect(MONGODB_URI, {
+    bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
+    serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
   })
-  .catch(err => {
-    console.error('MongoDB connection error for Admin Panel:', err);
-    process.exit(1);
-  });
+    .then(() => {
+      console.log('Connected to MongoDB for Admin Panel');
+      seedAdminUsers(); // Seed admin data after successful connection
+      app.listen(PORT, () => {
+        console.log(`Admin backend running on port ${PORT}`);
+      });
+    })
+    .catch(err => {
+      console.error('MongoDB connection error for Admin Panel:', err.message);
+      console.log('Retrying MongoDB connection in 5 seconds...');
+      setTimeout(connectWithRetry, 5000); // Retry after 5 seconds
+    });
+};
+
+connectWithRetry(); // Initiate the connection process
 
 // Add more explicit error handling for the Mongoose connection
 mongoose.connection.on('error', err => {
@@ -231,7 +238,9 @@ mongoose.connection.on('error', err => {
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.warn('Mongoose disconnected from MongoDB.');
+  console.warn('Mongoose disconnected from MongoDB. Attempting to reconnect...');
+  // Mongoose's built-in reconnection logic often handles this,
+  // but if not, the `connectWithRetry` could be adapted here too.
 });
 
 mongoose.connection.on('reconnected', () => {
