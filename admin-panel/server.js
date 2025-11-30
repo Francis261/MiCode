@@ -209,7 +209,11 @@ app.get('/admin-app/*', (req, res) => {
 // Connect to MongoDB and start server
 const PORT = process.env.ADMIN_BACKEND_PORT || 5001;
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
+})
   .then(() => {
     console.log('Connected to MongoDB for Admin Panel');
     seedAdminUsers(); // Seed admin data after successful connection
@@ -221,3 +225,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketpla
     console.error('MongoDB connection error for Admin Panel:', err);
     process.exit(1);
   });
+
+// Add more explicit error handling for the Mongoose connection
+mongoose.connection.on('error', err => {
+  console.error('Mongoose connection error AFTER initial connection:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('Mongoose disconnected from MongoDB.');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('Mongoose reconnected to MongoDB.');
+});
