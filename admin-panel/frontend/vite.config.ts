@@ -13,8 +13,11 @@ export default defineConfig({
   server: {
     port: 8081, // Admin frontend will run on port 8081
     fs: {
-      // Allow serving files from node_modules
-      allow: ['../../node_modules'], 
+      // Allow serving files from node_modules and the current project root
+      allow: [
+        '../../node_modules', // For the main monorepo node_modules
+        path.resolve(__dirname), // Explicitly allow the current project root (admin-panel/frontend)
+      ], 
     },
   },
 });
