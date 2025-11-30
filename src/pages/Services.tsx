@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/components/ServiceCard";
-import { services } from "@/data/services";
+import { useServices } from "@/hooks/useServices"; // Import useServices hook
 
 const pricingPlans = [
   {
@@ -49,6 +49,28 @@ const pricingPlans = [
 ];
 
 export default function Services() {
+  const { data: services, isLoading, error } = useServices(); // Fetch services
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
+          <p className="text-muted-foreground">Loading services...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
+          <p className="text-destructive">Error loading services: {error.message}</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       {/* Header */}
@@ -98,8 +120,8 @@ export default function Services() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service, index) => (
-              <ServiceCard key={service.title} {...service} delay={index * 0.1} />
+            {services?.map((service, index) => (
+              <ServiceCard key={service._id} {...service} delay={index * 0.1} />
             ))}
           </div>
         </div>

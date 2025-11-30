@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 
+// Re-using the Product interface from data/products.ts, but adding _id
 interface ProductCardProps {
-  id: string;
+  _id: string; // MongoDB ID
+  id: string; // Original static ID, if still needed for some logic
   title: string;
   description: string;
   price: number;
@@ -17,9 +19,12 @@ interface ProductCardProps {
   tags: string[];
   rating: number;
   reviews: number;
+  languageFramework?: string;
+  templateType?: string;
 }
 
 export function ProductCard({
+  _id,
   id,
   title,
   description,
@@ -30,12 +35,14 @@ export function ProductCard({
   tags,
   rating,
   reviews,
+  languageFramework,
+  templateType,
 }: ProductCardProps) {
   const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
   const { addItemToCart } = useCart();
 
   const handleAddToCart = () => {
-    addItemToCart({ id, title, description, price, originalPrice, image, category, tags, rating, reviews });
+    addItemToCart({ _id, id, title, description, price, originalPrice, image, category, tags, rating, reviews, languageFramework, templateType });
     toast.success(`${title} added to cart!`);
   };
 

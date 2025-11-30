@@ -6,18 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider"; // Import Slider component
-import { products, categories, languageFrameworks, templateTypes } from "@/data/products"; // Import new filter data
+import { Slider } from "@/components/ui/slider";
+import { categories, languageFrameworks, templateTypes } from "@/data/products"; // Keep filter data
 import { cn } from "@/lib/utils";
+import { useProducts } from "@/hooks/useProducts"; // Import useProducts hook
 
 export default function Store() {
+  const { data: products, isLoading, error } = useProducts(); // Fetch products
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 150]); // Max price in current data is 99, set a reasonable max
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 150]);
   const [selectedLanguageFramework, setSelectedLanguageFramework] = useState("all");
   const [selectedTemplateType, setSelectedTemplateType] = useState("all");
 
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = products?.filter((product) => {
     const matchesSearch =
       product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,7 +38,7 @@ export default function Store() {
     }
     
     return matchesSearch && matchesCategory && matchesPrice && matchesLanguageFramework && matchesTemplateType;
-  });
+  }) || [];
 
   const handleClearFilters = () => {
     setSearchQuery("");
@@ -45,6 +47,26 @@ export default function Store() {
     setSelectedLanguageFramework("all");
     setSelectedTemplateType("all");
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
+          <p className="text-muted-foreground">Loading products...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
+          <p className="text-destructive">Error loading products: {error.message}</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -191,7 +213,7 @@ export default function Store() {
           {filteredProducts.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} {...product} />
+                <ProductCard key={product._id} {...product} />
               ))}
             </div>
           ) : (

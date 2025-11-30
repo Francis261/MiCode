@@ -3,6 +3,7 @@ import { Star, Quote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface TestimonialCardProps {
+  _id: string; // MongoDB ID
   name: string;
   role: string;
   company: string;
@@ -13,6 +14,7 @@ interface TestimonialCardProps {
 }
 
 export function TestimonialCard({
+  _id,
   name,
   role,
   company,

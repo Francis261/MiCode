@@ -1,5 +1,21 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Product } from '@/data/products'; // Assuming Product interface is available
+
+// Define the Product interface as it comes from the backend
+interface Product {
+  _id: string; // MongoDB ID
+  id: string; // Original static ID, if still needed for some logic
+  title: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  category: string;
+  tags: string[];
+  rating: number;
+  reviews: number;
+  languageFramework?: string;
+  templateType?: string;
+}
 
 interface CartItem extends Product {
   quantity: number;
@@ -20,10 +36,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addItemToCart = (product: Product) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === product.id);
+      const existingItem = prevItems.find((item) => item._id === product._id);
       if (existingItem) {
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
         );
       } else {
         return [...prevItems, { ...product, quantity: 1 }];
@@ -33,13 +49,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const removeItemFromCart = (productId: string) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === productId);
+      const existingItem = prevItems.find((item) => item._id === productId);
       if (existingItem && existingItem.quantity > 1) {
         return prevItems.map((item) =>
-          item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+          item._id === productId ? { ...item, quantity: item.quantity - 1 } : item
         );
       } else {
-        return prevItems.filter((item) => item.id !== productId);
+        return prevItems.filter((item) => item._id !== productId);
       }
     });
   };

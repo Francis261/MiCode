@@ -1,0 +1,32 @@
+import { useQuery } from "@tanstack/react-query";
+import { fetcher } from "@/lib/api";
+import { LucideIcon } from "lucide-react";
+import * as LucideIcons from "lucide-react"; // Import all icons
+
+interface Service {
+  _id: string; // MongoDB ID
+  icon: string; // Stored as string, will be mapped to LucideIcon
+  title: string;
+  description: string;
+  features: string[];
+}
+
+// Helper to map string icon name to LucideIcon component
+const getLucideIcon = (iconName: string): LucideIcon => {
+  const Icon = (LucideIcons as any)[iconName];
+  return Icon || LucideIcons.HelpCircle; // Fallback to a default icon if not found
+};
+
+export function useServices() {
+  return useQuery<Service[], Error>({
+    queryKey: ["services"],
+    queryFn: async () => {
+      const data = await fetcher<Service[]>("/services");
+      // Map icon string to LucideIcon component for frontend use
+      return data.map(service => ({
+        ...service,
+        icon: getLucideIcon(service.icon) as any, // Cast to any to match ServiceCardProps
+      }));
+    },
+  });
+}

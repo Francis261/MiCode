@@ -1,8 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // OxaPay API endpoint for invoice generation
 const OXAPAY_INVOICE_URL = 'https://api.oxapay.com/v1/payment/invoice';
+
+// Configure iDrive E2 S3 client
+const s3Client = new S3Client({
+  endpoint: process.env.IDRIVE_E2_ENDPOINT,
+  region: 'us-east-1', // iDrive E2 often uses a generic region or you might need to specify based on your setup
+  credentials: {
+    accessKeyId: process.env.IDRIVE_E2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.IDRIVE_E2_SECRET_ACCESS_KEY,
+  },
+  forcePathStyle: true, // Required for some S3-compatible storage providers
+});
 
 // Create payment
 router.post('/create', async (req, res) => {
@@ -96,29 +109,40 @@ router.get('/download/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    // Verify the order exists and is paid
+    // TODO: In a real application, you would verify the order exists and is paid
     // const order = await Order.findOne({ orderId, status: 'paid' });
     // if (!order) {
-    //   return res.status(403).json({ message: 'Payment not verified' });
+    //   return res.status(403).json({ message: 'Payment not verified or order not found' });
     // }
 
-    // For demo purposes, send a sample file
-    // In production, you would serve the actual product file
-    const filePath = './downloads/product.zip'; // Path to your product file
-    
-    // Check if file exists, otherwise send a message
-    const fs = require('fs');
-    if (fs.existsSync(filePath)) {
-      res.download(filePath, 'product.zip');
-    } else {
-      res.status(404).json({ 
-        message: 'Product file not found. Please contact support.',
-        orderId 
-      });
+    // Determine the S3 key for the product. This would typically come from your order data.
+    // For demonstration, let's assume a generic product.zip for any orderId.
+    // In a real scenario, you'd fetch the actual product file name from the order.
+    const s3Key = `products/${orderId}.zip`; // Example: products/ORDER_12345.zip
+    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+
+    if (!bucketName) {
+      return res.status(500).json({ message: 'S3 bucket name not configured.' });
     }
+
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+    });
+
+    // Generate a pre-signed URL for direct download
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // URL valid for 1 hour
+
+    // Redirect the user to the signed URL to download the file
+    res.redirect(signedUrl);
+
   } catch (error) {
     console.error('Download error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    // Check if it's a NoSuchKey error (file not found)
+    if (error.name === 'NoSuchKey') {
+      return res.status(404).json({ message: 'Product file not found. Please contact support.', error: error.message });
+    }
+    res.status(500).json({ message: 'Internal server error during download.', error: error.message });
   }
 });
 
