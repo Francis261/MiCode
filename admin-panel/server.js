@@ -147,6 +147,7 @@ app.use('/api/products', authenticateToken, adminProductRoutes);
 // Dashboard Data Endpoints (Protected)
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
+    console.log('Dashboard stats: Product model available:', !!Product); // Log Product model availability
     console.log('Fetching dashboard stats. Mongoose connection state:', mongoose.connection.readyState);
     const totalProducts = await Product.countDocuments();
     const activeProducts = await Product.countDocuments({ isHidden: false });
@@ -186,6 +187,7 @@ app.get('/api/dashboard/sales-overview', authenticateToken, async (req, res) => 
 
 app.get('/api/dashboard/product-performance', authenticateToken, async (req, res) => {
   try {
+    console.log('Product performance: Product model available:', !!Product); // Log Product model availability
     console.log('Fetching product performance. Mongoose connection state:', mongoose.connection.readyState);
     // Fetch top 5 products by reviews (as a proxy for performance)
     const topProducts = await Product.find().sort({ reviews: -1 }).limit(5);
@@ -216,6 +218,8 @@ const connectWithRetry = () => {
   mongoose.connect(MONGODB_URI, {
     bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
     serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
+    connectTimeoutMS: 30000, // New: Timeout for initial connection
+    socketTimeoutMS: 45000, // New: Timeout for socket operations after connection
   })
     .then(() => {
       console.log('Connected to MongoDB for Admin Panel');
