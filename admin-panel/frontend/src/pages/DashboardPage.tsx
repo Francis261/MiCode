@@ -2,7 +2,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
-import { LineChart, BarChart, Users, Package } from 'lucide-react';
+import { LineChart, BarChart, Users, Package, DollarSign } from 'lucide-react'; // Added DollarSign
 
 export default function DashboardPage() {
   const { admin } = useAuth();
