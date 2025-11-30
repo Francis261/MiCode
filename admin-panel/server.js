@@ -22,6 +22,9 @@ app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Serve static files from the React build directory
+app.use('/admin-app', express.static(path.join(__dirname, 'frontend/dist')));
+
 // JWT Authentication Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -108,8 +111,8 @@ app.post('/verify-access', async (req, res) => {
 
     const tempToken = jwt.sign({ id: admin._id, role: admin.role, verified: true }, process.env.JWT_SECRET, { expiresIn: '15m' });
     
-    // In a real scenario, you would redirect to the React admin frontend with this token
-    // For now, we'll send a JSON response indicating success.
+    // Instead of rendering EJS, redirect to the React app with the tempToken
+    // The React app will then handle the login flow.
     res.json({ success: true, message: 'Access key verified. Proceed to login.', tempToken, adminId: admin._id });
 
   } catch (error) {
@@ -148,6 +151,11 @@ app.get('/admin/dashboard-data', authenticateToken, (req, res) => {
     return res.status(403).json({ message: 'Access denied' });
   }
   res.json({ message: `Welcome to the dashboard, ${req.user.email}!`, data: 'Some sensitive dashboard data.' });
+});
+
+// Catch-all for the React app: any route not matched by API or EJS will serve the React app's index.html
+app.get('/admin/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
 });
 
 
