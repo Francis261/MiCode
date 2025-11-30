@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { Sonner } from '@/components/ui/sonner';
+import { toast } from 'sonner'; // Import toast for messages
 
 // Pages
 import AccessVerificationPage from './pages/AccessVerificationPage';
@@ -23,22 +24,45 @@ const queryClient = new QueryClient();
 
 // PrivateRoute component to protect routes
 const PrivateRoute = ({ children, permission }: { children: JSX.Element; permission: string }) => {
-  const { isAuthenticated, checkPermission, tempToken } = useAuth();
+  const { isAuthenticated, checkPermission, admin } = useAuth();
+  const navigate = useNavigate();
 
-  if (!tempToken) {
-    return <Navigate to="/" replace />; // Redirect to access verification if no temp token
-  }
-
+  // If not authenticated at all, go to login
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />; // Redirect to login if not authenticated
+    return <Navigate to="/login" replace />;
   }
 
-  if (!checkPermission(permission)) {
+  // If authenticated but admin object is somehow missing (shouldn't happen after login)
+  if (isAuthenticated && !admin) {
+    toast.error("Authentication state corrupted. Please log in again.");
+    return <Navigate to="/login" replace />;
+  }
+
+  // If authenticated and admin object exists, check permissions
+  if (admin && !checkPermission(permission)) {
     toast.error("You don't have permission to access this page.");
-    return <Navigate to="/dashboard" replace />; // Redirect to dashboard if no permission
+    // Redirect to dashboard if they have access to it, otherwise to login
+    // This prevents a loop if they don't even have dashboard access
+    if (checkPermission("dashboard")) {
+      return <Navigate to="/dashboard" replace />;
+    } else {
+      return <Navigate to="/login" replace />;
+    }
   }
 
   return children;
+};
+
+// Component to handle redirects for unmatched routes based on authentication status
+const RedirectBasedOnAuth = () => {
+  const { isAuthenticated, tempToken } = useAuth();
+  if (!tempToken) {
+    return <Navigate to="/" replace />; // Go to access verification
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />; // Go to login
+  }
+  return <Navigate to="/dashboard" replace />; // Go to dashboard
 };
 
 const App = () => (
@@ -46,9 +70,9 @@ const App = () => (
     <AuthProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter> {/* Removed basename="/admin-app" */}
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<AccessVerificationPage />} /> {/* This is now the initial page */}
+          <Route path="/" element={<AccessVerificationPage />} />
           <Route path="/login" element={<LoginPage />} />
           
           {/* Protected Routes */}
@@ -126,7 +150,7 @@ const App = () => (
           />
 
           {/* Catch-all for unmatched routes */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<RedirectBasedOnAuth />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
