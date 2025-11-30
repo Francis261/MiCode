@@ -12,5 +12,9 @@ export default defineConfig({
   },
   server: {
     port: 8081, // Admin frontend will run on port 8081
+    fs: {
+      // Allow serving files from node_modules
+      allow: ['../../node_modules'], 
+    },
   },
 });
