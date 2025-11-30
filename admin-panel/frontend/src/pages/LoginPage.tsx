@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,18 +15,18 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // If already authenticated, redirect to dashboard
-  if (isAuthenticated) {
-    navigate('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]); // Depend on isAuthenticated and navigate
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard'); // Redirect to dashboard on successful login
+      // Navigation will now be handled by the useEffect hook after successful login
     } catch (error) {
       // Error handled by AuthContext and sonner toast
     } finally {
