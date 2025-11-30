@@ -46,7 +46,7 @@ const App = () => (
     <AuthProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/admin-app"> {/* Set basename for React Router */}
+      <BrowserRouter> {/* Removed basename="/admin-app" */}
         <Routes>
           <Route path="/" element={<AccessVerificationPage />} /> {/* This is now the initial page */}
           <Route path="/login" element={<LoginPage />} />
