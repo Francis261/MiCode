@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 // Get single product by ID
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findOne({ id: req.params.id });
+    const product = await Product.findById(req.params.id);
     
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
@@ -71,12 +71,11 @@ router.put('/:id', async (req, res) => {
   try {
     const updateData = req.body;
     
-    // Don't allow changing the unique ID
-    delete updateData.id;
+    // Don't allow changing MongoDB's _id
     delete updateData._id;
 
-    const product = await Product.findOneAndUpdate(
-      { id: req.params.id },
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -98,7 +97,7 @@ router.put('/:id', async (req, res) => {
 // Delete product
 router.delete('/:id', async (req, res) => {
   try {
-    const product = await Product.findOneAndDelete({ id: req.params.id });
+    const product = await Product.findByIdAndDelete(req.params.id);
 
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
