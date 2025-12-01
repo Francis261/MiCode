@@ -41,13 +41,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await adminFetcher<{ success: boolean; token: string; admin: AdminUser }>('/admin/login', {
+      const response = await adminFetcher<{ success: boolean; message?: string; token: string; admin: AdminUser }>('/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      if (response.success) {
+      if (response.success && response.token && response.admin) {
         setToken(response.token);
         setAdmin(response.admin);
         localStorage.setItem('adminToken', response.token);
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error: any) {
-      toast.error(error.message || 'An error occurred during login.');
+      toast.error(error.message || 'Invalid credentials or server error');
       throw error;
     }
   };
