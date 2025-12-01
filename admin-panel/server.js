@@ -154,7 +154,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     console.log('Dashboard stats: Product model available:', !!Product); // Log Product model availability
     console.log('Fetching dashboard stats. Mongoose connection state:', mongoose.connection.readyState);
     
-    const appStats = await AppStats.findOne(); // Fetch from AppStats
+    const appStats = await AppStats.findOne().maxTimeMS(30000); // Added maxTimeMS
     const totalProducts = appStats ? appStats.totalProducts : 0;
     const activeProducts = appStats ? appStats.activeProducts : 0;
     
@@ -196,7 +196,7 @@ app.get('/api/dashboard/product-performance', authenticateToken, async (req, res
     console.log('Product performance: Product model available:', !!Product); // Log Product model availability
     console.log('Fetching product performance. Mongoose connection state:', mongoose.connection.readyState);
     // Fetch top 5 products by reviews (as a proxy for performance)
-    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5);
+    const topProducts = await Product.find().sort({ reviews: -1 }).limit(5).maxTimeMS(30000); // Added maxTimeMS
     const productPerformanceData = topProducts.map(p => ({
       name: p.title,
       sales: Math.floor(Math.random() * 100 + 50), // Simulate sales count for each product

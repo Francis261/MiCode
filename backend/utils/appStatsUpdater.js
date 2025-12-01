@@ -4,11 +4,11 @@ const Product = require('../models/Product');
 // Function to initialize AppStats if it doesn't exist or to recalculate
 async function initializeAppStats() {
   try {
-    let stats = await AppStats.findOne();
+    let stats = await AppStats.findOne().maxTimeMS(30000); // Added maxTimeMS
     if (!stats) {
       console.log('AppStats document not found, initializing...');
-      const totalProducts = await Product.countDocuments();
-      const activeProducts = await Product.countDocuments({ isHidden: false });
+      const totalProducts = await Product.countDocuments().maxTimeMS(30000); // Added maxTimeMS
+      const activeProducts = await Product.countDocuments({ isHidden: false }).maxTimeMS(30000); // Added maxTimeMS
       stats = new AppStats({ totalProducts, activeProducts });
       await stats.save();
       console.log('AppStats initialized:', stats);
@@ -30,7 +30,7 @@ async function incrementProductCounts(isProductHidden = false) {
       {},
       { $inc: { totalProducts: 1, ...(isProductHidden ? {} : { activeProducts: 1 }) } },
       { upsert: true, new: true }
-    );
+    ).maxTimeMS(30000); // Added maxTimeMS
   } catch (error) {
     console.error('Error incrementing product counts:', error);
   }
@@ -43,7 +43,7 @@ async function decrementProductCounts(wasProductHidden = false) {
       {},
       { $inc: { totalProducts: -1, ...(wasProductHidden ? {} : { activeProducts: -1 }) } },
       { upsert: true, new: true }
-    );
+    ).maxTimeMS(30000); // Added maxTimeMS
   } catch (error) {
     console.error('Error decrementing product counts:', error);
   }
@@ -55,9 +55,9 @@ async function updateProductVisibilityCounts(oldIsHidden, newIsHidden) {
     if (oldIsHidden === newIsHidden) return; // No change in visibility
 
     if (oldIsHidden && !newIsHidden) { // Product changed from hidden to visible
-      await AppStats.findOneAndUpdate({}, { $inc: { activeProducts: 1 } }, { upsert: true, new: true });
+      await AppStats.findOneAndUpdate({}, { $inc: { activeProducts: 1 } }, { upsert: true, new: true }).maxTimeMS(30000); // Added maxTimeMS
     } else if (!oldIsHidden && newIsHidden) { // Product changed from visible to hidden
-      await AppStats.findOneAndUpdate({}, { $inc: { activeProducts: -1 } }, { upsert: true, new: true });
+      await AppStats.findOneAndUpdate({}, { $inc: { activeProducts: -1 } }, { upsert: true, new: true }).maxTimeMS(30000); // Added maxTimeMS
     }
   } catch (error) {
     console.error('Error updating product visibility counts:', error);
