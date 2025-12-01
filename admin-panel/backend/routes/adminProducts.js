@@ -1,8 +1,8 @@
 const express = require('express');
 const { authMiddleware, checkPermission } = require('../middleware/authMiddleware');
-const Product = require('../../backend/models/Product');
-const AppStats = require('../../backend/models/AppStats');
-const { updateAppStats } = require('../../backend/utils/appStatsUpdater');
+const Product = require('../models/Product');
+const AppStats = require('../models/AppStats');
+const { updateAppStats } = require('../utils/appStatsUpdater');
 
 const router = express.Router();
 
