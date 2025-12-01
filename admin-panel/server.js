@@ -220,9 +220,11 @@ const connectWithRetry = () => {
     serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
     connectTimeoutMS: 30000, // New: Timeout for initial connection
     socketTimeoutMS: 45000, // New: Timeout for socket operations after connection
+    maxTimeMS: 30000, // New: Max time for individual operations (30 seconds)
   })
     .then(() => {
       console.log('Connected to MongoDB for Admin Panel');
+      console.log('Mongoose connection options (maxTimeMS):', mongoose.connection.options.maxTimeMS);
       seedAdminUsers(); // Seed admin data after successful connection
       app.listen(PORT, () => {
         console.log(`Admin backend running on port ${PORT}`);
