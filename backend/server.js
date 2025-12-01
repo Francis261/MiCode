@@ -7,6 +7,7 @@ require('dotenv').config();
 const Product = require('./models/Product');
 const Service = require('./models/Service');
 const Testimonial = require('./models/Testimonial');
+const AppStats = require('./models/AppStats'); // Import AppStats
 
 // Import data from backend/data (for seeding)
 const { products } = require('./data/products');
@@ -18,6 +19,9 @@ const productRoutes = require('./routes/product');
 const serviceRoutes = require('./routes/service');
 const testimonialRoutes = require('./routes/testimonial');
 const paymentRoutes = require('./routes/payment');
+
+// Import AppStats utility
+const { initializeAppStats } = require('./utils/appStatsUpdater');
 
 const app = express();
 
@@ -82,6 +86,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketpla
   .then(() => {
     console.log('Connected to MongoDB');
     seedDatabase(); // Seed data after successful connection
+    initializeAppStats(); // Initialize AppStats after seeding
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

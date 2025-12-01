@@ -8,9 +8,13 @@ require('dotenv').config();
 
 const AdminUser = require('./models/AdminUser');
 const Product = require('../backend/models/Product'); // Corrected path
+const AppStats = require('../backend/models/AppStats'); // Import AppStats model
 
 // Import admin routes
 const adminProductRoutes = require('./routes/product');
+
+// Import AppStats utility
+const { initializeAppStats } = require('../backend/utils/appStatsUpdater');
 
 const app = express();
 
@@ -149,8 +153,10 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     console.log('Dashboard stats: Product model available:', !!Product); // Log Product model availability
     console.log('Fetching dashboard stats. Mongoose connection state:', mongoose.connection.readyState);
-    const totalProducts = await Product.countDocuments();
-    const activeProducts = await Product.countDocuments({ isHidden: false });
+    
+    const appStats = await AppStats.findOne(); // Fetch from AppStats
+    const totalProducts = appStats ? appStats.totalProducts : 0;
+    const activeProducts = appStats ? appStats.activeProducts : 0;
     
     // Dummy data for sales and users as we don't have these models
     const totalSales = (Math.random() * 100000 + 50000).toFixed(2); // $50k - $150k
@@ -226,6 +232,7 @@ const connectWithRetry = () => {
       console.log('Connected to MongoDB for Admin Panel');
       // Removed the log for maxTimeMS as it's no longer a connection option
       seedAdminUsers(); // Seed admin data after successful connection
+      initializeAppStats(); // Initialize AppStats for admin panel
       app.listen(PORT, () => {
         console.log(`Admin backend running on port ${PORT}`);
       });

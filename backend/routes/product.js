@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
+const { incrementProductCounts, decrementProductCounts, updateProductVisibilityCounts } = require('../utils/appStatsUpdater'); // Import utility functions
 
 // Get all products (can add query params for filtering/searching later if needed by frontend)
 router.get('/', async (req, res) => {
@@ -32,6 +33,7 @@ router.post('/', async (req, res) => {
   try {
     const newProduct = new Product(req.body);
     await newProduct.save();
+    await incrementProductCounts(newProduct.isHidden); // Update stats
     res.status(201).json(newProduct);
   } catch (error) {
     console.error('Error creating product:', error);
@@ -42,10 +44,18 @@ router.post('/', async (req, res) => {
 // Update an existing product
 router.put('/:id', async (req, res) => {
   try {
-    const updatedProduct = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
-    if (!updatedProduct) {
+    const existingProduct = await Product.findOne({ id: req.params.id });
+    if (!existingProduct) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    const updatedProduct = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
+    
+    // Update stats if visibility changed
+    if (existingProduct.isHidden !== updatedProduct.isHidden) {
+      await updateProductVisibilityCounts(existingProduct.isHidden, updatedProduct.isHidden);
+    }
+
     res.json(updatedProduct);
   } catch (error) {
     console.error('Error updating product:', error);
@@ -60,6 +70,7 @@ router.delete('/:id', async (req, res) => {
     if (!deletedProduct) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    await decrementProductCounts(deletedProduct.isHidden); // Update stats
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
