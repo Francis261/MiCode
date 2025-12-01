@@ -5,7 +5,7 @@ const Testimonial = require('../models/Testimonial');
 // Get all testimonials
 router.get('/', async (req, res) => {
   try {
-    const testimonials = await Testimonial.find();
+    const testimonials = await Testimonial.find().maxTimeMS(30000); // Added maxTimeMS
     res.json(testimonials);
   } catch (error) {
     console.error('Error fetching testimonials:', error);
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 // Get a single testimonial by ID (optional)
 router.get('/:id', async (req, res) => {
   try {
-    const testimonial = await Testimonial.findById(req.params.id);
+    const testimonial = await Testimonial.findById(req.params.id).maxTimeMS(30000); // Added maxTimeMS
     if (!testimonial) {
       return res.status(404).json({ message: 'Testimonial not found' });
     }

@@ -6,7 +6,7 @@ const { incrementProductCounts, decrementProductCounts, updateProductVisibilityC
 // Get all products (can add query params for filtering/searching later if needed by frontend)
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find().maxTimeMS(30000); // Added maxTimeMS
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 // Get a single product by ID
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findOne({ id: req.params.id }); // Assuming 'id' is the unique identifier used by frontend
+    const product = await Product.findOne({ id: req.params.id }).maxTimeMS(30000); // Added maxTimeMS
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -44,12 +44,12 @@ router.post('/', async (req, res) => {
 // Update an existing product
 router.put('/:id', async (req, res) => {
   try {
-    const existingProduct = await Product.findOne({ id: req.params.id });
+    const existingProduct = await Product.findOne({ id: req.params.id }).maxTimeMS(30000); // Added maxTimeMS
     if (!existingProduct) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const updatedProduct = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
+    const updatedProduct = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true }).maxTimeMS(30000); // Added maxTimeMS
     
     // Update stats if visibility changed
     if (existingProduct.isHidden !== updatedProduct.isHidden) {
@@ -66,7 +66,7 @@ router.put('/:id', async (req, res) => {
 // Delete a product
 router.delete('/:id', async (req, res) => {
   try {
-    const deletedProduct = await Product.findOneAndDelete({ id: req.params.id });
+    const deletedProduct = await Product.findOneAndDelete({ id: req.params.id }).maxTimeMS(30000); // Added maxTimeMS
     if (!deletedProduct) {
       return res.status(404).json({ message: 'Product not found' });
     }
