@@ -16,7 +16,7 @@ async function initializeAppStats() {
       // Optionally, you could add logic here to periodically re-sync counts
       // if there's a risk of them getting out of sync due to external changes.
       // For now, we assume updates are always through our routes.
-      console.log('AppStats already exists:', stats);
+      // console.log('AppStats already exists:', stats); // Removed this log
     }
   } catch (error) {
     console.error('Error initializing AppStats:', error);
