@@ -81,17 +81,42 @@ const seedDatabase = async () => {
 
 // Connect to MongoDB and start server
 const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace')
+const connectWithRetry = () => {
+  console.log('Attempting to connect to MongoDB for main backend with URI:', MONGODB_URI);
+  mongoose.connect(MONGODB_URI, {
+    bufferTimeoutMS: 60000, // Increased buffer timeout to 1 minute
+    serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
+    connectTimeoutMS: 30000, // Timeout for initial connection
+    socketTimeoutMS: 45000, // Timeout for socket operations after connection
+  })
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log('Connected to MongoDB for main backend');
     seedDatabase(); // Seed data after successful connection
     initializeAppStats(); // Initialize AppStats after seeding
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`Main backend running on port ${PORT}`);
     });
   })
   .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+    console.error('MongoDB connection error for main backend:', err.message);
+    console.log('Retrying MongoDB connection in 5 seconds...');
+    setTimeout(connectWithRetry, 5000); // Retry after 5 seconds
   });
+};
+
+connectWithRetry(); // Initiate the connection process
+
+// Add more explicit error handling for the Mongoose connection
+mongoose.connection.on('error', err => {
+  console.error('Mongoose connection error AFTER initial connection for main backend:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('Mongoose disconnected from MongoDB for main backend. Attempting to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('Mongoose reconnected to MongoDB for main backend.');
+});

@@ -220,9 +220,9 @@ const PORT = process.env.ADMIN_BACKEND_PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
 
 const connectWithRetry = () => {
-  console.log('Attempting to connect to MongoDB with URI:', MONGODB_URI); // Log the URI
+  console.log('Attempting to connect to MongoDB for Admin Panel with URI:', MONGODB_URI); // Log the URI
   mongoose.connect(MONGODB_URI, {
-    bufferTimeoutMS: 30000, // Increased buffer timeout to 30 seconds
+    bufferTimeoutMS: 60000, // Increased buffer timeout to 1 minute
     serverSelectionTimeoutMS: 60000, // Increased server selection timeout to 1 minute
     connectTimeoutMS: 30000, // New: Timeout for initial connection
     socketTimeoutMS: 45000, // New: Timeout for socket operations after connection
@@ -248,13 +248,13 @@ connectWithRetry(); // Initiate the connection process
 
 // Add more explicit error handling for the Mongoose connection
 mongoose.connection.on('error', err => {
-  console.error('Mongoose connection error AFTER initial connection:', err);
+  console.error('Mongoose connection error AFTER initial connection for Admin Panel:', err);
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.warn('Mongoose disconnected from MongoDB. Attempting to reconnect...');
+  console.warn('Mongoose disconnected from MongoDB for Admin Panel. Attempting to reconnect...');
 });
 
 mongoose.connection.on('reconnected', () => {
-  console.log('Mongoose reconnected to MongoDB.');
+  console.log('Mongoose reconnected to MongoDB for Admin Panel.');
 });
