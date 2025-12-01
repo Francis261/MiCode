@@ -217,6 +217,9 @@ app.get('/admin-app/*', (req, res) => {
 const PORT = process.env.ADMIN_BACKEND_PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
 
+// Set global buffering timeout for Mongoose
+mongoose.set('bufferTimeoutMS', 60000); // Set to 60 seconds
+
 const connectWithRetry = () => {
   console.log('Attempting to connect to MongoDB for Admin Panel with URI:', MONGODB_URI); // Log the URI
   mongoose.connect(MONGODB_URI, {

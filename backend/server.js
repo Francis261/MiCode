@@ -83,6 +83,9 @@ const seedDatabase = async () => {
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/marketplace';
 
+// Set global buffering timeout for Mongoose
+mongoose.set('bufferTimeoutMS', 60000); // Set to 60 seconds
+
 const connectWithRetry = () => {
   console.log('Attempting to connect to MongoDB for main backend with URI:', MONGODB_URI);
   mongoose.connect(MONGODB_URI, {
