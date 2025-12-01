@@ -1,7 +1,7 @@
 const express = require('express');
 const { authMiddleware, checkPermission } = require('../middleware/authMiddleware');
-const Product = require('../../backend/models/Product');
-const AppStats = require('../../backend/models/AppStats');
+const Product = require('../models/Product');
+const AppStats = require('../models/AppStats');
 
 const router = express.Router();
 
