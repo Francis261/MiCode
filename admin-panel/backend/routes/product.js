@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../../backend/models/Product'); // Corrected path
-const { incrementProductCounts, decrementProductCounts, updateProductVisibilityCounts } = require('../../backend/utils/appStatsUpdater'); // Import utility functions
+const Product = require('../../../backend/models/Product'); // Corrected path
+const { incrementProductCounts, decrementProductCounts, updateProductVisibilityCounts } = require('../../../backend/utils/appStatsUpdater'); // Corrected path
 
 // Get all products
 router.get('/', async (req, res) => {
