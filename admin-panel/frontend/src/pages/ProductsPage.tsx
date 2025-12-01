@@ -133,7 +133,7 @@ export default function ProductsPage() {
   const handleEditProduct = (data: any) => {
     if (!editingProduct) return;
     updateProductMutation.mutate(
-      { id: editingProduct.id, ...data },
+      { id: editingProduct._id, ...data },
       {
         onSuccess: () => {
           setIsFormOpen(false);
@@ -151,7 +151,7 @@ export default function ProductsPage() {
 
   const handleToggleVisibility = (product: Product) => {
     updateProductMutation.mutate({
-      id: product.id,
+      id: product._id,
       isHidden: !product.isHidden,
     });
   };
@@ -319,7 +319,7 @@ export default function ProductsPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={() => handleDeleteProduct(product._id)}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -363,7 +363,7 @@ export default function ProductsPage() {
             {viewingProduct && (
               <div className="space-y-4 text-sm">
                 <img src={viewingProduct.image} alt={viewingProduct.title} className="w-full h-48 object-cover rounded-md mb-4" />
-                <p><strong>ID:</strong> {viewingProduct.id}</p>
+                <p><strong>ID:</strong> {viewingProduct._id}</p>
                 <p><strong>Title:</strong> {viewingProduct.title}</p>
                 <p><strong>Description:</strong> {viewingProduct.description}</p>
                 <p><strong>Price:</strong> ${viewingProduct.price.toFixed(2)}</p>
