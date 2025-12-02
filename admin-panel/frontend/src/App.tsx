@@ -11,12 +11,12 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductsPage from './pages/ProductsPage';
 import ServicesPage from './pages/ServicesPage';
-import TestimonialsPage from './pages/TestimonialsPage'; // Import the new TestimonialsPage
+import TestimonialsPage from './pages/TestimonialsPage';
 import SupportCenterPage from './pages/SupportCenterPage';
 import UsersPage from './pages/UsersPage';
+import ManageAdminsPage from './pages/ManageAdminsPage'; // Import the new ManageAdminsPage
 const CustomOrdersPage = () => <DashboardPage />; // Replace with actual CustomOrdersPage
 const OrdersPaymentsPage = () => <DashboardPage />; // Replace with actual OrdersPaymentsPage
-const ManageAdminsPage = () => <DashboardPage />; // Replace with actual ManageAdminsPage
 
 const queryClient = new QueryClient();
 

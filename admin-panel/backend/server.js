@@ -65,13 +65,15 @@ const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const productRoutes = require('./routes/adminProducts');
 const serviceRoutes = require('./routes/adminServices');
-const testimonialRoutes = require('./routes/adminTestimonials'); // Import new testimonial routes
+const testimonialRoutes = require('./routes/adminTestimonials');
+const adminUserRoutes = require('./routes/adminUsers'); // Import new admin user routes
 
 app.use('/', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/services', serviceRoutes);
-app.use('/api/testimonials', testimonialRoutes); // Use new testimonial routes
+app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/admin-users', adminUserRoutes); // Use new admin user routes
 
 // Health check
 app.get('/health', (req, res) => {

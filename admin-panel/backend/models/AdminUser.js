@@ -24,7 +24,7 @@ const AdminUserSchema = new mongoose.Schema({
     of: String, // '*' for full, '+' for access, '-' for no access
     default: {
       dashboard: '+',
-      manageAdmins: '-',
+      manageAdmins: '-', // Default to no access for non-superadmins
       products: '+',
       services: '+',
       testimonials: '+',
