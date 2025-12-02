@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
-const { authenticateToken, checkPermission } = require('../middleware/authMiddleware');
+const { authMiddleware, checkPermission } = require('../middleware/authMiddleware'); // Changed 'authenticateToken' to 'authMiddleware'
 
 // Apply authentication to all routes
-router.use(authenticateToken);
+router.use(authMiddleware);
 
 // Get all services
 router.get('/', checkPermission('services'), async (req, res) => {
