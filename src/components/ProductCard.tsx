@@ -24,12 +24,13 @@ export function ProductCard({
   reviews,
   languageFramework,
   templateType,
+  previewUrl, // Destructure new previewUrl
 }: ProductCardProps) {
   const discount = originalPrice ? Math.round((1 - price / originalPrice) * 100) : 0;
   const { addItemToCart } = useCart();
 
   const handleAddToCart = () => {
-    addItemToCart({ _id, id, title, description, price, originalPrice, image, category, tags, rating, reviews, languageFramework, templateType });
+    addItemToCart({ _id, id, title, description, price, originalPrice, image, category, tags, rating, reviews, languageFramework, templateType, previewUrl });
     toast.success(`${title} added to cart!`);
   };
 
@@ -52,9 +53,13 @@ export function ProductCard({
           
           {/* Hover Actions */}
           <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <Button variant="glass" size="icon">
-              <Eye className="h-5 w-5" />
-            </Button>
+            {previewUrl && ( // Conditionally render Eye icon if previewUrl exists
+              <Button variant="glass" size="icon" asChild>
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer" aria-label="Preview Product">
+                  <Eye className="h-5 w-5" />
+                </a>
+              </Button>
+            )}
             <Button variant="hero" size="icon" onClick={handleAddToCart}>
               <ShoppingCart className="h-5 w-5" />
             </Button>

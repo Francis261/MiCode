@@ -30,6 +30,7 @@ const productFormSchema = z.object({
   languageFramework: z.string().optional(),
   templateType: z.string().optional(),
   isHidden: z.boolean().default(false),
+  previewUrl: z.string().url("Must be a valid URL").optional().or(z.literal('')), // New field
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -62,6 +63,7 @@ export function ProductForm({ initialData, onSubmit, onCancel, isLoading }: Prod
       languageFramework: initialData?.languageFramework || "",
       templateType: initialData?.templateType || "",
       isHidden: initialData?.isHidden || false,
+      previewUrl: initialData?.previewUrl || "", // New default value
     },
   });
 
@@ -69,6 +71,7 @@ export function ProductForm({ initialData, onSubmit, onCancel, isLoading }: Prod
     onSubmit({
       ...values,
       tags: values.tags.split(",").map((tag) => tag.trim()),
+      previewUrl: values.previewUrl || undefined, // Ensure empty string becomes undefined
     });
   };
 
@@ -131,6 +134,14 @@ export function ProductForm({ initialData, onSubmit, onCancel, isLoading }: Prod
         <Input id="image" {...form.register("image")} placeholder="https://example.com/image.jpg" />
         {form.formState.errors.image && (
           <p className="text-destructive text-sm">{form.formState.errors.image.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="previewUrl">Preview URL (Optional)</Label>
+        <Input id="previewUrl" {...form.register("previewUrl")} placeholder="https://preview.example.com" />
+        {form.formState.errors.previewUrl && (
+          <p className="text-destructive text-sm">{form.formState.errors.previewUrl.message}</p>
         )}
       </div>
 

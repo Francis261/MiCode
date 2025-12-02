@@ -43,6 +43,7 @@ import {
   Trash2,
   Info,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProductForm } from "@/components/admin/product-form";
@@ -306,6 +307,13 @@ export default function ProductsPage() {
                             <DropdownMenuItem onClick={() => handleViewDetails(product)}>
                               <Info className="mr-2 h-4 w-4" /> View Details
                             </DropdownMenuItem>
+                            {product.previewUrl && (
+                              <DropdownMenuItem asChild>
+                                <a href={product.previewUrl} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="mr-2 h-4 w-4" /> View Preview
+                                </a>
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => { setEditingProduct(product); setIsFormOpen(true); }}>
                               <Edit className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
@@ -373,6 +381,19 @@ export default function ProductsPage() {
                 <p><strong>Rating:</strong> {viewingProduct.rating} ({viewingProduct.reviews} reviews)</p>
                 {viewingProduct.languageFramework && <p><strong>Framework:</strong> {viewingProduct.languageFramework}</p>}
                 {viewingProduct.templateType && <p><strong>Template Type:</strong> {viewingProduct.templateType}</p>}
+                {viewingProduct.previewUrl && (
+                  <p>
+                    <strong>Preview Link:</strong>{" "}
+                    <a 
+                      href={viewingProduct.previewUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-primary hover:underline flex items-center gap-1"
+                    >
+                      {viewingProduct.previewUrl} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </p>
+                )}
                 <p><strong>Status:</strong> {viewingProduct.isHidden ? "Hidden" : "Visible"}</p>
                 <p className="text-muted-foreground mt-4">
                   *Note: Information about "who has the product" is not available in this admin panel version.

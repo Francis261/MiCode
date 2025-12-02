@@ -13,4 +13,5 @@ export interface Product {
   languageFramework?: string;
   templateType?: string;
   isHidden: boolean; // New field
+  previewUrl?: string; // New field for product preview link
 }

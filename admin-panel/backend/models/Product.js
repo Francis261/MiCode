@@ -14,6 +14,7 @@ const productSchema = new mongoose.Schema({
   languageFramework: { type: String },
   templateType: { type: String },
   isHidden: { type: Boolean, default: false },
+  previewUrl: { type: String }, // New field for product preview link
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

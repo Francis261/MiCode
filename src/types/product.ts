@@ -12,4 +12,5 @@ export interface Product {
   reviews: number;
   languageFramework?: string;
   templateType?: string;
+  previewUrl?: string; // New field for product preview link
 }
