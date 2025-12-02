@@ -22,6 +22,27 @@ interface ChatUser {
   email: string;
 }
 
+// Local storage helpers - MOVED OUTSIDE THE HOOK
+const saveMessagesToLocalStorage = (userId: string, messages: Message[]) => {
+  try {
+    const key = `${LOCAL_STORAGE_KEY}_${userId}`;
+    localStorage.setItem(key, JSON.stringify(messages));
+  } catch (error) {
+    console.error('Error saving messages to localStorage:', error);
+  }
+};
+
+const getMessagesFromLocalStorage = (userId: string): Message[] => {
+  try {
+    const key = `${LOCAL_STORAGE_KEY}_${userId}`;
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error reading messages from localStorage:', error);
+    return [];
+  }
+};
+
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [user, setUser] = useState<ChatUser | null>(null);
