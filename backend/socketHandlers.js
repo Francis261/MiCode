@@ -6,27 +6,30 @@ module.exports = (io) => {
     console.log('New client connected:', socket.id);
 
     // Join user to their own room
-    socket.on('join', async ({ userId, isAdmin }) => {
+    socket.on('join', async ({ odUserId, userId, isAdmin }) => {
+      const finalUserId = odUserId || userId;
       if (isAdmin) {
         socket.join('admin-room');
         console.log('Admin joined:', socket.id);
       } else {
-        socket.join(`user-${userId}`);
+        socket.join(`user-${finalUserId}`);
         await ChatUser.findOneAndUpdate(
-          { userId },
+          { $or: [{ odUserId: finalUserId }, { userId: finalUserId }] },
           { isActive: true, lastSeen: new Date() }
         );
         // Notify admin of user activity
-        io.to('admin-room').emit('user-active', { userId });
-        console.log('User joined:', userId);
+        io.to('admin-room').emit('user-active', { odUserId: finalUserId, odUserId: finalUserId });
+        console.log('User joined:', finalUserId);
       }
     });
 
     // Handle new message
-    socket.on('send-message', async ({ userId, message, sender }) => {
+    socket.on('send-message', async ({ odUserId, userId, message, sender }) => {
+      const finalUserId = odUserId || userId;
       try {
         const newMessage = new ChatMessage({
-          userId,
+          odUserId: finalUserId,
+          userId: finalUserId,
           sender,
           message,
           timestamp: new Date(),
@@ -36,15 +39,16 @@ module.exports = (io) => {
         // Update unread count if message is from user
         if (sender === 'user') {
           await ChatUser.findOneAndUpdate(
-            { userId },
+            { $or: [{ odUserId: finalUserId }, { userId: finalUserId }] },
             { $inc: { unreadCount: 1 }, lastSeen: new Date() }
           );
         }
 
         // Send message to user room
-        io.to(`user-${userId}`).emit('receive-message', {
+        io.to(`user-${finalUserId}`).emit('receive-message', {
           _id: newMessage._id,
-          userId,
+          odUserId: finalUserId,
+          userId: finalUserId,
           sender,
           message,
           timestamp: newMessage.timestamp,
@@ -54,14 +58,15 @@ module.exports = (io) => {
         // Send message to admin room
         io.to('admin-room').emit('receive-message', {
           _id: newMessage._id,
-          userId,
+          odUserId: finalUserId,
+          userId: finalUserId,
           sender,
           message,
           timestamp: newMessage.timestamp,
           isRead: false,
         });
 
-        console.log('Message sent:', { userId, sender, message });
+        console.log('Message sent:', { odUserId: finalUserId, sender, message });
       } catch (error) {
         console.error('Error saving message:', error);
       }
