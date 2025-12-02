@@ -38,6 +38,11 @@ router.post('/', checkPermission('services'), async (req, res) => {
   try {
     const serviceData = req.body;
     
+    // Normalize actionButton: if label or url are empty, set actionButton to null
+    if (serviceData.actionButton && (!serviceData.actionButton.label || !serviceData.actionButton.url)) {
+      serviceData.actionButton = null;
+    }
+
     const newService = new Service(serviceData);
     const savedService = await newService.save();
     
@@ -55,6 +60,11 @@ router.put('/:id', checkPermission('services'), async (req, res) => {
     
     // Don't allow changing MongoDB's _id
     delete updateData._id;
+
+    // Normalize actionButton: if label or url are empty, set actionButton to null
+    if (updateData.actionButton && (!updateData.actionButton.label || !updateData.actionButton.url)) {
+      updateData.actionButton = null;
+    }
 
     const service = await Service.findByIdAndUpdate(
       req.params.id,

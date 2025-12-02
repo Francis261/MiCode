@@ -76,6 +76,8 @@ export function ServiceForm({ initialData, onSubmit, onCancel, isLoading }: Serv
   });
 
   const handleSubmit = (values: ServiceFormValues) => {
+    const normalizedContent = values.content === "<p><br></p>" || !values.content?.trim() ? '' : values.content;
+
     const submitData = {
       icon: values.icon,
       title: values.title,
@@ -85,7 +87,7 @@ export function ServiceForm({ initialData, onSubmit, onCancel, isLoading }: Serv
         ? { label: values.actionButtonLabel, url: values.actionButtonUrl }
         : undefined,
       statusTag: values.statusTag || null,
-      content: values.content || '',
+      content: normalizedContent,
       contentImages: [], // Extract from content if needed
       isHidden: values.isHidden,
     };
