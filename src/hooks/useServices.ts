@@ -15,7 +15,7 @@ interface Service {
   };
   statusTag?: string;
   content?: string;
-  isHidden?: boolean;
+  isHidden?: boolean; // Added isHidden property
 }
 
 // Interface for the service data *after* icon mapping
