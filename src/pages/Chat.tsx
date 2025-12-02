@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Layout } from "@/components/layout/Layout";
+import { Navbar } from "@/components/layout/Navbar"; // Import Navbar
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -82,9 +82,10 @@ const Chat = () => {
   };
 
   return (
-    <Layout>
-      <div className="min-h-[calc(100vh-200px)] bg-background py-8">
-        <div className="container max-w-3xl mx-auto px-4">
+    <div className="min-h-screen flex flex-col dark"> {/* Full screen container */}
+      <Navbar /> {/* Keep the Navbar */}
+      <div className="flex-1 pt-24 bg-background"> {/* Main content area, takes remaining height, with padding for navbar */}
+        <div className="container max-w-3xl mx-auto px-4 py-8"> {/* Original container for chat content */}
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -245,7 +246,7 @@ const Chat = () => {
           </motion.div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
