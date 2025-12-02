@@ -1,15 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
-
-interface Testimonial {
-  _id: string; // MongoDB ID
-  name: string;
-  role: string;
-  company: string;
-  avatar: string;
-  content: string;
-  rating: number;
-}
+import { Testimonial } from "@/types/testimonial"; // Import new Testimonial type
 
 export function useTestimonials() {
   return useQuery<Testimonial[], Error>({

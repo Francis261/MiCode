@@ -11,9 +11,9 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProductsPage from './pages/ProductsPage';
 import ServicesPage from './pages/ServicesPage';
+import TestimonialsPage from './pages/TestimonialsPage'; // Import the new TestimonialsPage
 import SupportCenterPage from './pages/SupportCenterPage';
 import UsersPage from './pages/UsersPage';
-const TestimonialsPage = () => <DashboardPage />; // Replace with actual TestimonialsPage
 const CustomOrdersPage = () => <DashboardPage />; // Replace with actual CustomOrdersPage
 const OrdersPaymentsPage = () => <DashboardPage />; // Replace with actual OrdersPaymentsPage
 const ManageAdminsPage = () => <DashboardPage />; // Replace with actual ManageAdminsPage

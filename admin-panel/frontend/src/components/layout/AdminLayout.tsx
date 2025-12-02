@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'; // Import use
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, LogOut, UserCircle, LayoutDashboard, Package, Settings, Users, MessageSquareText, ShoppingBag, DollarSign } from 'lucide-react';
+import { Menu, LogOut, UserCircle, LayoutDashboard, Package, Settings, Users, MessageSquareText, ShoppingBag, DollarSign, Star } from 'lucide-react'; // Import Star icon
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils'; // Import cn for conditional classnames
@@ -16,7 +16,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
   { to: "/products", label: "Products", icon: Package, permission: "products" },
   { to: "/services", label: "Services", icon: Settings, permission: "services" },
-  { to: "/testimonials", label: "Testimonials", icon: MessageSquareText, permission: "testimonials" },
+  { to: "/testimonials", label: "Testimonials", icon: Star, permission: "testimonials" }, // Added Testimonials
   { to: "/custom-orders", label: "Custom Orders", icon: ShoppingBag, permission: "customOrders" },
   { to: "/orders-payments", label: "Orders & Payments", icon: DollarSign, permission: "ordersPayments" },
   { to: "/users", label: "Users", icon: Users, permission: "users" },
