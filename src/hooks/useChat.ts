@@ -3,27 +3,24 @@ import { io, Socket } from 'socket.io-client';
 import { fetcher } from '@/lib/api'; // Import fetcher
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; // Still needed for socket.io
+const LOCAL_STORAGE_KEY = 'chatMessages'; // Define this constant
 
-// Local storage helpers
-const saveMessagesToLocalStorage = (userId: string, messages: Message[]) => {
-  try {
-    const key = `${LOCAL_STORAGE_KEY}_${userId}`;
-    localStorage.setItem(key, JSON.stringify(messages));
-  } catch (error) {
-    console.error('Error saving messages to localStorage:', error);
-  }
-};
+interface Message {
+  _id?: string; // MongoDB ID, optional for new messages
+  odId?: string; // Our own generated ID for client-side tracking
+  userId: string;
+  sender: 'user' | 'admin' | 'system';
+  message: string;
+  timestamp: Date;
+  isRead?: boolean;
+  isRegistrationPrompt?: boolean; // For internal UI logic
+}
 
-const getMessagesFromLocalStorage = (userId: string): Message[] => {
-  try {
-    const key = `${LOCAL_STORAGE_KEY}_${userId}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
-    console.error('Error reading messages from localStorage:', error);
-    return [];
-  }
-};
+interface ChatUser {
+  odUserId: string; // Our own generated ID
+  name: string;
+  email: string;
+}
 
 export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);

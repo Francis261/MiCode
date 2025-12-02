@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Send, Circle } from 'lucide-react';
-import { adminFetcher } from '@/lib/api'; // Import adminFetcher
+import { fetcher } from '../../../../src/lib/api'; // Import fetcher from main frontend
 import { io, Socket } from 'socket.io-client';
 import { motion } from 'framer-motion';
 
@@ -94,8 +94,8 @@ const SupportCenterPage = () => {
 
   const loadChatUsers = async () => {
     try {
-      // Use adminFetcher for API calls
-      const data = await adminFetcher<{ success: boolean; users: ChatUser[] }>('/chat/users');
+      // Use fetcher for API calls to the main backend
+      const data = await fetcher<{ success: boolean; users: ChatUser[] }>('/chat/users');
       if (data.success) {
         setChatUsers(data.users);
       }
@@ -106,13 +106,13 @@ const SupportCenterPage = () => {
 
   const loadChatHistory = async (userId: string) => {
     try {
-      // Use adminFetcher for API calls
-      const data = await adminFetcher<{ success: boolean; messages: Message[] }>(`/chat/history/${userId}`);
+      // Use fetcher for API calls to the main backend
+      const data = await fetcher<{ success: boolean; messages: Message[] }>(`/chat/history/${userId}`);
       if (data.success) {
         setMessages(data.messages);
         
         // Mark messages as read
-        await adminFetcher(`/chat/mark-read/${userId}`, {
+        await fetcher(`/chat/mark-read/${userId}`, { // Use fetcher here too
           method: 'POST',
         });
         
