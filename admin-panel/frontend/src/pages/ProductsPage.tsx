@@ -133,8 +133,14 @@ export default function ProductsPage() {
 
   const handleEditProduct = (data: any) => {
     if (!editingProduct) return;
+    
+    // The 'id' in data is the static product ID from the form.
+    // We use this 'id' for the API route parameter.
+    // We also remove the '_id' from the payload as the backend explicitly deletes it.
+    const { _id, ...updatePayload } = data; // Destructure _id to ensure it's not sent in the body
+
     updateProductMutation.mutate(
-      { id: editingProduct._id, ...data },
+      { id: editingProduct.id, ...updatePayload }, // Use editingProduct.id (static ID) for the route, and send other data
       {
         onSuccess: () => {
           setIsFormOpen(false);
@@ -146,13 +152,19 @@ export default function ProductsPage() {
 
   const handleDeleteProduct = (productId: string) => {
     if (window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
-      deleteProductMutation.mutate(productId);
+      // When deleting, we need to pass the static 'id' to the mutation
+      const productToDelete = products?.find(p => p._id === productId);
+      if (productToDelete) {
+        deleteProductMutation.mutate(productToDelete.id); // Pass static ID
+      } else {
+        toast.error("Product not found for deletion.");
+      }
     }
   };
 
   const handleToggleVisibility = (product: Product) => {
     updateProductMutation.mutate({
-      id: product._id,
+      id: product.id, // Use static ID for update
       isHidden: !product.isHidden,
     });
   };

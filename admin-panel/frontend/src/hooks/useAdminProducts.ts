@@ -41,11 +41,11 @@ export function useCreateProduct() {
   });
 }
 
-// Update an existing product
+// Update an existing product (using static 'id' for the route parameter)
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
   return useMutation<Product, Error, Partial<Product> & { id: string }>({
-    mutationFn: ({ id, ...updateData }) => adminFetcher<Product>(`/api/products/${id}`, {
+    mutationFn: ({ id, ...updateData }) => adminFetcher<Product>(`/api/products/${id}`, { // 'id' here is the static product ID
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updateData),
@@ -60,11 +60,11 @@ export function useUpdateProduct() {
   });
 }
 
-// Delete a product
+// Delete a product (using static 'id' for the route parameter)
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string>({
-    mutationFn: (productId) => adminFetcher<void>(`/api/products/${productId}`, {
+  return useMutation<void, Error, string>({ // The string here is the static product ID
+    mutationFn: (productId) => adminFetcher<void>(`/api/products/${productId}`, { // 'productId' here is the static product ID
       method: "DELETE",
     }),
     onSuccess: () => {
