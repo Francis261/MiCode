@@ -6,17 +6,22 @@ const ChatMessage = require('../models/ChatMessage');
 // Register or get chat user
 router.post('/register', async (req, res) => {
   try {
-    const { userId, name, email } = req.body;
+    const { odUserId, userId, name, email } = req.body;
+    const finalUserId = odUserId || userId;
 
-    if (!userId || !name || !email) {
+    if (!finalUserId || !name || !email) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    let user = await ChatUser.findOne({ userId });
+    // Check if user exists by odUserId or email
+    let user = await ChatUser.findOne({ 
+      $or: [{ odUserId: finalUserId }, { userId: finalUserId }, { email }] 
+    });
 
     if (!user) {
       user = new ChatUser({
-        userId,
+        odUserId: finalUserId,
+        userId: finalUserId,
         name,
         email,
         isActive: true,
@@ -26,10 +31,13 @@ router.post('/register', async (req, res) => {
     } else {
       user.isActive = true;
       user.lastSeen = new Date();
+      if (!user.odUserId) {
+        user.odUserId = finalUserId;
+      }
       await user.save();
     }
 
-    res.json({ success: true, user });
+    res.json({ success: true, user, isNew: !user._id });
   } catch (error) {
     console.error('Error registering chat user:', error);
     res.status(500).json({ success: false, message: 'Server error' });
