@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 // Import models for seeding
@@ -19,15 +21,33 @@ const productRoutes = require('./routes/product');
 const serviceRoutes = require('./routes/service');
 const testimonialRoutes = require('./routes/testimonial');
 const paymentRoutes = require('./routes/payment');
+const chatRoutes = require('./routes/chat');
 
 // Import AppStats utility
 const { initializeAppStats } = require('./utils/appStatsUpdater');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:8080',
+      process.env.ADMIN_FRONTEND_URL || 'http://localhost:8081'
+    ],
+    credentials: true
+  }
+});
+
+// Socket.IO handlers
+const socketHandlers = require('./socketHandlers');
+socketHandlers(io);
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:8080',
+    process.env.ADMIN_FRONTEND_URL || 'http://localhost:8081'
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -37,6 +57,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -98,8 +119,9 @@ const connectWithRetry = () => {
     console.log('Connected to MongoDB for main backend');
     seedDatabase(); // Seed data after successful connection
     initializeAppStats(); // Initialize AppStats after seeding
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Main backend running on port ${PORT}`);
+      console.log(`Socket.IO server is ready`);
     });
   })
   .catch(err => {

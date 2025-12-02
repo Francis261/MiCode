@@ -1,53 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Send, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-
-interface Message {
-  id: number;
-  text: string;
-  sender: "user" | "bot";
-  timestamp: Date;
-}
+import { useChat } from "@/hooks/useChat";
+import { useToast } from "@/hooks/use-toast";
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: "Hello! How can I help you today?",
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ]);
+  const { messages, user, isConnected, needsRegistration, registerUser, sendMessage } = useChat();
   const [inputValue, setInputValue] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleRegister = async () => {
+    if (!name.trim() || !email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both name and email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await registerUser(name, email);
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.message || "Failed to register",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
-
-    const userMessage: Message = {
-      id: messages.length + 1,
-      text: inputValue,
-      sender: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    sendMessage(inputValue);
     setInputValue("");
-
-    // Simulate bot response
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: messages.length + 2,
-        text: "Thanks for your message! Our team will get back to you shortly. For immediate assistance, please use our WhatsApp chat.",
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -78,64 +77,117 @@ const Chat = () => {
               <div className="p-4 border-b border-border">
                 <h1 className="text-xl font-display font-bold">Live Chat</h1>
                 <p className="text-sm text-muted-foreground">
-                  We typically reply within a few minutes
+                  {isConnected ? (
+                    <>Connected • We typically reply within a few minutes</>
+                  ) : (
+                    <>Connecting...</>
+                  )}
                 </p>
               </div>
 
-              {/* Messages Container */}
-              <div className="h-[400px] overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${
-                      message.sender === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                        message.sender === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
-                      }`}
-                    >
-                      <p className="text-sm">{message.text}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.sender === "user"
-                            ? "text-primary-foreground/70"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Input Area */}
-              <div className="p-4 border-t border-border">
-                <div className="flex gap-2">
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-muted/50 border-border/50"
-                  />
+              {needsRegistration ? (
+                /* Registration Form */
+                <div className="p-6 space-y-4">
+                  <div className="text-center mb-4">
+                    <h2 className="text-lg font-semibold">Welcome to our chat!</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Please provide your details to continue
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your name"
+                      className="bg-muted/50 border-border/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="bg-muted/50 border-border/50"
+                    />
+                  </div>
                   <Button
-                    onClick={handleSend}
-                    className="bg-primary hover:bg-primary/90"
+                    onClick={handleRegister}
+                    className="w-full bg-primary hover:bg-primary/90"
                   >
-                    <Send className="w-4 h-4" />
+                    Continue
                   </Button>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Messages Container */}
+                  <div className="h-[400px] overflow-y-auto p-4 space-y-4">
+                    {messages.length === 0 && (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <p className="text-sm">Start a conversation...</p>
+                      </div>
+                    )}
+                    {messages.map((message, index) => (
+                      <motion.div
+                        key={message._id || index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex ${
+                          message.sender === "user" ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                            message.sender === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground"
+                          }`}
+                        >
+                          <p className="text-sm">{message.message}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              message.sender === "user"
+                                ? "text-primary-foreground/70"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {new Date(message.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="p-4 border-t border-border">
+                    <div className="flex gap-2">
+                      <Input
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type your message..."
+                        className="flex-1 bg-muted/50 border-border/50"
+                        disabled={!isConnected}
+                      />
+                      <Button
+                        onClick={handleSend}
+                        className="bg-primary hover:bg-primary/90"
+                        disabled={!isConnected}
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </Card>
           </motion.div>
         </div>
