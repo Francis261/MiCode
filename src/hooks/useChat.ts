@@ -1,26 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { fetcher } from '@/lib/api'; // Import fetcher
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const LOCAL_STORAGE_KEY = 'chat_messages';
-
-interface Message {
-  _id?: string;
-  odId?: string;
-  odUserId?: string;
-  userId: string;
-  sender: 'user' | 'admin' | 'system';
-  message: string;
-  timestamp: Date;
-  isRead?: boolean;
-  isRegistrationPrompt?: boolean;
-}
-
-interface ChatUser {
-  odUserId: string;
-  name: string;
-  email: string;
-}
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; // Still needed for socket.io
 
 // Local storage helpers
 const saveMessagesToLocalStorage = (userId: string, messages: Message[]) => {
@@ -74,8 +56,8 @@ export const useChat = () => {
 
   const syncWithBackend = async (userId: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/chat/history/${userId}`);
-      const data = await response.json();
+      // Use fetcher for API calls
+      const data = await fetcher<{ success: boolean; messages: Message[] }>(`/chat/history/${userId}`);
       if (data.success && data.messages.length > 0) {
         setMessages(data.messages);
         saveMessagesToLocalStorage(userId, data.messages);
@@ -133,13 +115,12 @@ export const useChat = () => {
     const odUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
-      const response = await fetch(`${BACKEND_URL}/api/chat/register`, {
+      // Use fetcher for API calls
+      const data = await fetcher<{ success: boolean; message?: string; user?: ChatUser }>(`/chat/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ odUserId, name, email }),
       });
-
-      const data = await response.json();
       
       if (data.success) {
         localStorage.setItem('chatUserId', odUserId);
@@ -163,10 +144,10 @@ export const useChat = () => {
         return { success: true };
       }
       
-      return { success: false, message: 'Failed to register' };
+      return { success: false, message: data.message || 'Failed to register' };
     } catch (error) {
       console.error('Error registering user:', error);
-      return { success: false, message: 'Server error' };
+      return { success: false, message: (error as Error).message || 'Server error' };
     }
   };
 

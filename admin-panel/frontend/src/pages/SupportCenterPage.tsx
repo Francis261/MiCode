@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Send, Circle } from 'lucide-react';
-import { adminFetcher } from '@/lib/api';
+import { adminFetcher } from '@/lib/api'; // Import adminFetcher
 import { io, Socket } from 'socket.io-client';
 import { motion } from 'framer-motion';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; // This is for the main backend, used by socket.io
 
 interface ChatUser {
   userId: string;
@@ -94,8 +94,8 @@ const SupportCenterPage = () => {
 
   const loadChatUsers = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/chat/users`);
-      const data = await response.json();
+      // Use adminFetcher for API calls
+      const data = await adminFetcher<{ success: boolean; users: ChatUser[] }>('/chat/users');
       if (data.success) {
         setChatUsers(data.users);
       }
@@ -106,13 +106,13 @@ const SupportCenterPage = () => {
 
   const loadChatHistory = async (userId: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/chat/history/${userId}`);
-      const data = await response.json();
+      // Use adminFetcher for API calls
+      const data = await adminFetcher<{ success: boolean; messages: Message[] }>(`/chat/history/${userId}`);
       if (data.success) {
         setMessages(data.messages);
         
         // Mark messages as read
-        await fetch(`${BACKEND_URL}/api/chat/mark-read/${userId}`, {
+        await adminFetcher(`/chat/mark-read/${userId}`, {
           method: 'POST',
         });
         
