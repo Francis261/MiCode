@@ -13,7 +13,8 @@ app.use(cors({
   origin: process.env.ADMIN_FRONTEND_URL || 'http://localhost:8081',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increased limit to 50mb
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also add urlencoded for safety
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
