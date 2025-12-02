@@ -63,10 +63,12 @@ seedSuperAdmin();
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const productRoutes = require('./routes/adminProducts');
+const serviceRoutes = require('./routes/adminServices');
 
 app.use('/', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

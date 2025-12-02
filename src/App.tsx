@@ -7,6 +7,7 @@ import { FloatingButtons } from "@/components/FloatingButtons";
 import Index from "./pages/Index";
 import Store from "./pages/Store";
 import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
 import CustomOrder from "./pages/CustomOrder";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/store" element={<Store />} />
             <Route path="/services" element={<Services />} />
+            <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/custom-order" element={<CustomOrder />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />

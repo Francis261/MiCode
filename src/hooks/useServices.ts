@@ -4,11 +4,18 @@ import { LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react"; // Import all icons
 
 interface Service {
-  _id: string; // MongoDB ID
-  icon: string; // Stored as string, will be mapped to LucideIcon
+  _id: string;
+  icon: string;
   title: string;
   description: string;
   features: string[];
+  actionButton?: {
+    label: string;
+    url: string;
+  };
+  statusTag?: string;
+  content?: string;
+  isHidden?: boolean;
 }
 
 // Interface for the service data *after* icon mapping
