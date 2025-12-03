@@ -16,7 +16,7 @@ const orderMessageSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const customOrderSchema = new mongoose.Schema({
-  orderId: { type: String, required: true, unique: true },
+  orderId: { type: String, unique: true },
   clientName: { type: String, required: true },
   clientEmail: { type: String, required: true },
   clientCompany: String,
