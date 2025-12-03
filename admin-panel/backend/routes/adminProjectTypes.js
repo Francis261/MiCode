@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ProjectType = require('../models/ProjectType');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware'); // Destructure authMiddleware
 
 router.use(authMiddleware);
 

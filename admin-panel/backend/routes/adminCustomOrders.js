@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const CustomOrder = require('../models/CustomOrder');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authMiddleware } = require('../middleware/authMiddleware'); // Destructure authMiddleware
 
 // Apply auth middleware to all routes
 router.use(authMiddleware);
