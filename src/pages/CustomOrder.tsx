@@ -65,7 +65,7 @@ export default function CustomOrder() {
   useEffect(() => {
     const fetchProjectTypes = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/custom-order/project-types`);
+        const response = await fetch(`${API_BASE}/api/custom-orders/project-types`);
         if (response.ok) {
           const data = await response.json();
           setProjectTypes(data);
@@ -118,7 +118,7 @@ export default function CustomOrder() {
         features: formData.features || undefined,
       };
 
-      const response = await fetch(`${API_BASE}/api/custom-order/submit`, {
+      const response = await fetch(`${API_BASE}/api/custom-orders/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
