@@ -440,8 +440,8 @@ export default function CustomOrdersPage() {
                     placeholder="Re: Your project request"
                   />
                 </div>
-              </div>
-              <div>
+              )}
+              <div> {/* This div was previously incorrectly closed */}
                 <Label>Message</Label>
                 <Textarea
                   value={messageText}
