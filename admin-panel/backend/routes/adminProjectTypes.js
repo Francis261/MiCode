@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const ProjectType = require('../models/ProjectType');
-const { authMiddleware } = require('../middleware/authMiddleware'); // Destructure authMiddleware
+const { authMiddleware, checkPermission } = require('../middleware/authMiddleware'); // Destructure authMiddleware and checkPermission
 
 router.use(authMiddleware);
+router.use(checkPermission('customOrders')); // Apply customOrders permission check to all routes
 
 // Get all project types
 router.get('/', async (req, res) => {
