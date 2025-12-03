@@ -173,7 +173,6 @@ export const useChat = () => {
     if (!socketRef.current || !messageText.trim()) return;
 
     const message: Message = {
-      odUserId,
       odId: `msg_${Date.now()}`,
       userId: odUserId,
       sender: 'user',
