@@ -1,12 +1,12 @@
 import { ReactNode } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, LogOut, UserCircle, LayoutDashboard, Package, Settings, Users, MessageSquareText, ShoppingBag, DollarSign, Star } from 'lucide-react'; // Import Star icon
+import { Menu, LogOut, UserCircle, LayoutDashboard, Package, Settings, Users, MessageSquareText, ShoppingBag, DollarSign, Star, FolderKanban, ListTodo } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils'; // Import cn for conditional classnames
+import { cn } from '@/lib/utils';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -16,8 +16,10 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
   { to: "/products", label: "Products", icon: Package, permission: "products" },
   { to: "/services", label: "Services", icon: Settings, permission: "services" },
-  { to: "/testimonials", label: "Testimonials", icon: Star, permission: "testimonials" }, // Added Testimonials
+  { to: "/testimonials", label: "Testimonials", icon: Star, permission: "testimonials" },
   { to: "/custom-orders", label: "Custom Orders", icon: ShoppingBag, permission: "customOrders" },
+  { to: "/project-types", label: "Project Types", icon: FolderKanban, permission: "customOrders" },
+  { to: "/tasks", label: "Tasks", icon: ListTodo, permission: "customOrders" },
   { to: "/orders-payments", label: "Orders & Payments", icon: DollarSign, permission: "ordersPayments" },
   { to: "/users", label: "Users", icon: Users, permission: "users" },
   { to: "/manage-admins", label: "Manage Admins", icon: UserCircle, permission: "manageAdmins" },

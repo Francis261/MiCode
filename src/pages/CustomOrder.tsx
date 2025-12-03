@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle, Loader2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
@@ -9,73 +9,176 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
-const projectTypes = [
-  "Portfolio Website",
-  "E-Commerce Store",
-  "SaaS Application",
-  "Blog / Content Site",
-  "Landing Page",
-  "Web Application",
-  "Mobile App",
-  "API Development",
-  "Other",
-];
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
-const budgetRanges = [
-  "$500 - $1,000",
-  "$1,000 - $2,500",
-  "$2,500 - $5,000",
-  "$5,000 - $10,000",
-  "$10,000+",
-];
+interface BudgetRange {
+  label: string;
+  minAmount: number;
+  maxAmount: number;
+  isCustom?: boolean;
+}
 
-const timelines = [
-  "1-2 weeks",
-  "2-4 weeks",
-  "1-2 months",
-  "2-3 months",
-  "Flexible",
-];
+interface TimelineOption {
+  label: string;
+  minDays: number;
+  maxDays: number;
+  isCustom?: boolean;
+}
+
+interface ProjectType {
+  _id: string;
+  name: string;
+  description?: string;
+  budgetRanges: BudgetRange[];
+  timelines: TimelineOption[];
+  features?: string[];
+  isActive: boolean;
+}
 
 export default function CustomOrder() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
+  const [selectedProjectType, setSelectedProjectType] = useState<ProjectType | null>(null);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(true);
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    company: "",
+    clientName: "",
+    clientEmail: "",
+    clientCompany: "",
+    clientPhone: "",
     projectType: "",
+    customProjectType: "",
     budget: "",
+    customBudgetMin: "",
+    customBudgetMax: "",
     timeline: "",
+    customTimelineValue: "",
+    customTimelineUnit: "weeks",
     description: "",
     features: "",
   });
+
+  // Fetch project types from backend
+  useEffect(() => {
+    const fetchProjectTypes = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/custom-order/project-types`);
+        if (response.ok) {
+          const data = await response.json();
+          setProjectTypes(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch project types:', error);
+      } finally {
+        setIsLoadingTypes(false);
+      }
+    };
+    fetchProjectTypes();
+  }, []);
+
+  // Update selected project type when selection changes
+  useEffect(() => {
+    if (formData.projectType && formData.projectType !== "other") {
+      const found = projectTypes.find(pt => pt.name === formData.projectType);
+      setSelectedProjectType(found || null);
+    } else {
+      setSelectedProjectType(null);
+    }
+    // Reset budget and timeline when project type changes
+    setFormData(prev => ({ ...prev, budget: "", timeline: "" }));
+  }, [formData.projectType, projectTypes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const submitData: Record<string, unknown> = {
+        clientName: formData.clientName,
+        clientEmail: formData.clientEmail,
+        clientCompany: formData.clientCompany || undefined,
+        clientPhone: formData.clientPhone || undefined,
+        projectType: formData.projectType === "other" ? "Other" : formData.projectType,
+        customProjectType: formData.projectType === "other" ? formData.customProjectType : undefined,
+        budget: formData.budget === "custom" ? "Custom" : formData.budget,
+        customBudget: formData.budget === "custom" ? {
+          min: parseFloat(formData.customBudgetMin) || 0,
+          max: parseFloat(formData.customBudgetMax) || 0,
+          currency: "USD"
+        } : undefined,
+        timeline: formData.timeline === "custom" ? "Custom" : formData.timeline,
+        customTimeline: formData.timeline === "custom" ? {
+          value: parseInt(formData.customTimelineValue) || 0,
+          unit: formData.customTimelineUnit
+        } : undefined,
+        description: formData.description,
+        features: formData.features || undefined,
+      };
 
-    const newOrderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
-    setOrderId(newOrderId);
-    setIsSubmitted(true);
-    setIsSubmitting(false);
+      const response = await fetch(`${API_BASE}/api/custom-order/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submitData),
+      });
 
-    toast({
-      title: "Order Submitted!",
-      description: `Your order ID is ${newOrderId}. We'll be in touch soon.`,
-    });
+      const data = await response.json();
+
+      if (response.ok) {
+        setOrderId(data.orderId);
+        setIsSubmitted(true);
+        toast({
+          title: "Order Submitted!",
+          description: `Your order ID is ${data.orderId}. We'll be in touch soon.`,
+        });
+      } else {
+        throw new Error(data.message || 'Failed to submit order');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Get budget ranges based on selected project type or use defaults
+  const getBudgetOptions = () => {
+    if (selectedProjectType?.budgetRanges?.length) {
+      return selectedProjectType.budgetRanges;
+    }
+    return [
+      { label: "$500 - $1,000", minAmount: 500, maxAmount: 1000 },
+      { label: "$1,000 - $2,500", minAmount: 1000, maxAmount: 2500 },
+      { label: "$2,500 - $5,000", minAmount: 2500, maxAmount: 5000 },
+      { label: "$5,000 - $10,000", minAmount: 5000, maxAmount: 10000 },
+      { label: "$10,000+", minAmount: 10000, maxAmount: 100000 },
+    ];
+  };
+
+  // Get timeline options based on selected project type or use defaults
+  const getTimelineOptions = () => {
+    if (selectedProjectType?.timelines?.length) {
+      return selectedProjectType.timelines;
+    }
+    return [
+      { label: "1-2 weeks", minDays: 7, maxDays: 14 },
+      { label: "2-4 weeks", minDays: 14, maxDays: 28 },
+      { label: "1-2 months", minDays: 30, maxDays: 60 },
+      { label: "2-3 months", minDays: 60, maxDays: 90 },
+      { label: "Flexible", minDays: 0, maxDays: 365 },
+    ];
   };
 
   if (isSubmitted) {
@@ -164,11 +267,11 @@ export default function CustomOrder() {
                   <h2 className="font-display text-xl font-bold mb-4">Contact Information</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name *</Label>
+                      <Label htmlFor="clientName">Full Name *</Label>
                       <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
+                        id="clientName"
+                        name="clientName"
+                        value={formData.clientName}
                         onChange={handleChange}
                         required
                         placeholder="John Doe"
@@ -176,26 +279,38 @@ export default function CustomOrder() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address *</Label>
+                      <Label htmlFor="clientEmail">Email Address *</Label>
                       <Input
-                        id="email"
-                        name="email"
+                        id="clientEmail"
+                        name="clientEmail"
                         type="email"
-                        value={formData.email}
+                        value={formData.clientEmail}
                         onChange={handleChange}
                         required
                         placeholder="john@example.com"
                         className="bg-background"
                       />
                     </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="company">Company / Organization</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientCompany">Company / Organization</Label>
                       <Input
-                        id="company"
-                        name="company"
-                        value={formData.company}
+                        id="clientCompany"
+                        name="clientCompany"
+                        value={formData.clientCompany}
                         onChange={handleChange}
                         placeholder="Your Company Name"
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientPhone">Phone Number</Label>
+                      <Input
+                        id="clientPhone"
+                        name="clientPhone"
+                        type="tel"
+                        value={formData.clientPhone}
+                        onChange={handleChange}
+                        placeholder="+1 (555) 000-0000"
                         className="bg-background"
                       />
                     </div>
@@ -205,7 +320,9 @@ export default function CustomOrder() {
                 {/* Project Details */}
                 <div>
                   <h2 className="font-display text-xl font-bold mb-4">Project Details</h2>
-                  <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                  
+                  {/* Project Type */}
+                  <div className="space-y-4 mb-4">
                     <div className="space-y-2">
                       <Label htmlFor="projectType">Project Type *</Label>
                       <select
@@ -215,52 +332,149 @@ export default function CustomOrder() {
                         onChange={handleChange}
                         required
                         className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground"
+                        disabled={isLoadingTypes}
                       >
                         <option value="">Select type...</option>
                         {projectTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
+                          <option key={type._id} value={type.name}>
+                            {type.name}
                           </option>
                         ))}
+                        <option value="other">Other (Custom)</option>
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="budget">Budget Range *</Label>
-                      <select
-                        id="budget"
-                        name="budget"
-                        value={formData.budget}
-                        onChange={handleChange}
-                        required
-                        className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground"
-                      >
-                        <option value="">Select budget...</option>
-                        {budgetRanges.map((range) => (
-                          <option key={range} value={range}>
-                            {range}
-                          </option>
-                        ))}
-                      </select>
+                    
+                    {formData.projectType === "other" && (
+                      <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                        <Label htmlFor="customProjectType">Describe Your Project Type *</Label>
+                        <Input
+                          id="customProjectType"
+                          name="customProjectType"
+                          value={formData.customProjectType}
+                          onChange={handleChange}
+                          required
+                          placeholder="e.g., AI-powered chatbot, Blockchain application..."
+                          className="bg-background"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    {/* Budget */}
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="budget">Budget Range *</Label>
+                        <select
+                          id="budget"
+                          name="budget"
+                          value={formData.budget}
+                          onChange={handleChange}
+                          required
+                          className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground"
+                        >
+                          <option value="">Select budget...</option>
+                          {getBudgetOptions().map((range, idx) => (
+                            <option key={idx} value={range.label}>
+                              {range.label}
+                            </option>
+                          ))}
+                          <option value="custom">Custom Budget</option>
+                        </select>
+                      </div>
+                      
+                      {formData.budget === "custom" && (
+                        <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                          <Label>Custom Budget Range (USD) *</Label>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              name="customBudgetMin"
+                              type="number"
+                              value={formData.customBudgetMin}
+                              onChange={handleChange}
+                              required
+                              placeholder="Min"
+                              className="bg-background"
+                            />
+                            <span className="text-muted-foreground">to</span>
+                            <Input
+                              name="customBudgetMax"
+                              type="number"
+                              value={formData.customBudgetMax}
+                              onChange={handleChange}
+                              required
+                              placeholder="Max"
+                              className="bg-background"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="timeline">Timeline *</Label>
-                      <select
-                        id="timeline"
-                        name="timeline"
-                        value={formData.timeline}
-                        onChange={handleChange}
-                        required
-                        className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground"
-                      >
-                        <option value="">Select timeline...</option>
-                        {timelines.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
+
+                    {/* Timeline */}
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="timeline">Timeline *</Label>
+                        <select
+                          id="timeline"
+                          name="timeline"
+                          value={formData.timeline}
+                          onChange={handleChange}
+                          required
+                          className="w-full h-11 px-4 rounded-lg bg-background border border-input text-foreground"
+                        >
+                          <option value="">Select timeline...</option>
+                          {getTimelineOptions().map((time, idx) => (
+                            <option key={idx} value={time.label}>
+                              {time.label}
+                            </option>
+                          ))}
+                          <option value="custom">Custom Timeline</option>
+                        </select>
+                      </div>
+                      
+                      {formData.timeline === "custom" && (
+                        <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                          <Label>Custom Timeline *</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              name="customTimelineValue"
+                              type="number"
+                              value={formData.customTimelineValue}
+                              onChange={handleChange}
+                              required
+                              placeholder="Value"
+                              className="bg-background flex-1"
+                            />
+                            <select
+                              name="customTimelineUnit"
+                              value={formData.customTimelineUnit}
+                              onChange={handleChange}
+                              className="h-11 px-4 rounded-lg bg-background border border-input text-foreground"
+                            >
+                              <option value="days">Days</option>
+                              <option value="weeks">Weeks</option>
+                              <option value="months">Months</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Show suggested features if project type has them */}
+                  {selectedProjectType?.features && selectedProjectType.features.length > 0 && (
+                    <div className="mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                      <p className="text-sm font-medium mb-2">Common features for {selectedProjectType.name}:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProjectType.features.map((feature, idx) => (
+                          <span key={idx} className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="description">Project Description *</Label>
