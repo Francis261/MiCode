@@ -34,12 +34,14 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function TasksPage() {
-  const [selectedOrderId, setSelectedOrderId] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [selectedOrderId, setSelectedOrderId] = useState<string>("all"); // Changed initial state to "all"
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // Changed initial state to "all"
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const { tasks, isLoading, createTask, updateTask, deleteTask, toggleSubtask } = useAdminTasks(selectedOrderId || undefined);
+  const { tasks, isLoading, createTask, updateTask, deleteTask, toggleSubtask } = useAdminTasks(
+    selectedOrderId === "all" ? undefined : selectedOrderId // Pass undefined if "all"
+  );
   const { orders } = useAdminCustomOrders();
 
   const [formData, setFormData] = useState({
@@ -58,13 +60,13 @@ export default function TasksPage() {
   const [newSubtask, setNewSubtask] = useState("");
   const [newTag, setNewTag] = useState("");
 
-  const filteredTasks = statusFilter 
-    ? tasks.filter(t => t.status === statusFilter)
-    : tasks;
+  const filteredTasks = statusFilter === "all"
+    ? tasks
+    : tasks.filter(t => t.status === statusFilter);
 
   const resetForm = () => {
     setFormData({
-      orderId: selectedOrderId || "",
+      orderId: selectedOrderId === "all" ? "" : selectedOrderId, // Reset to empty string if "all" is selected
       title: "",
       description: "",
       status: "todo",
@@ -201,7 +203,7 @@ export default function TasksPage() {
                   <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Projects</SelectItem>
+                  <SelectItem value="all">All Projects</SelectItem> {/* Changed value to "all" */}
                   {orders.map(order => (
                     <SelectItem key={order._id} value={order._id}>
                       {order.orderId} - {order.clientName}
@@ -214,7 +216,7 @@ export default function TasksPage() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem> {/* Changed value to "all" */}
                   {Object.entries(statusConfig).map(([key, { label }]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
