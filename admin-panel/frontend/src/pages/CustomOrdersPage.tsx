@@ -37,8 +37,8 @@ const priorityColors: Record<string, string> = {
 
 export default function CustomOrdersPage() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [priorityFilter, setPriorityFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // Changed initial state to "all"
+  const [priorityFilter, setPriorityFilter] = useState<string>("all"); // Changed initial state to "all"
   const [selectedOrder, setSelectedOrder] = useState<CustomOrder | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -53,8 +53,8 @@ export default function CustomOrdersPage() {
 
   const { orders, isLoading, pagination, updateOrder, deleteOrder, addMessage, sendQuote } = useAdminCustomOrders({
     search: search || undefined,
-    status: statusFilter || undefined,
-    priority: priorityFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter, // Pass undefined if "all"
+    priority: priorityFilter === "all" ? undefined : priorityFilter, // Pass undefined if "all"
   });
 
   const handleStatusChange = (orderId: string, status: string) => {
@@ -124,7 +124,7 @@ export default function CustomOrdersPage() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem> {/* Changed value to "all" */}
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="reviewing">Reviewing</SelectItem>
                   <SelectItem value="quoted">Quoted</SelectItem>
@@ -140,7 +140,7 @@ export default function CustomOrdersPage() {
                   <SelectValue placeholder="All Priorities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Priorities</SelectItem>
+                  <SelectItem value="all">All Priorities</SelectItem> {/* Changed value to "all" */}
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -440,7 +440,7 @@ export default function CustomOrdersPage() {
                     placeholder="Re: Your project request"
                   />
                 </div>
-              )}
+              </div>
               <div>
                 <Label>Message</Label>
                 <Textarea
