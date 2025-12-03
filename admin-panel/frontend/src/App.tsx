@@ -14,9 +14,11 @@ import ServicesPage from './pages/ServicesPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import SupportCenterPage from './pages/SupportCenterPage';
 import UsersPage from './pages/UsersPage';
-import ManageAdminsPage from './pages/ManageAdminsPage'; // Import the new ManageAdminsPage
-const CustomOrdersPage = () => <DashboardPage />; // Replace with actual CustomOrdersPage
-const OrdersPaymentsPage = () => <DashboardPage />; // Replace with actual OrdersPaymentsPage
+import ManageAdminsPage from './pages/ManageAdminsPage';
+import CustomOrdersPage from './pages/CustomOrdersPage';
+import ProjectTypesPage from './pages/ProjectTypesPage';
+import TasksPage from './pages/TasksPage';
+const OrdersPaymentsPage = () => <DashboardPage />;
 
 const queryClient = new QueryClient();
 
@@ -143,6 +145,22 @@ const App = () => (
             element={
               <PrivateRoute permission="support">
                 <SupportCenterPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/project-types"
+            element={
+              <PrivateRoute permission="customOrders">
+                <ProjectTypesPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <PrivateRoute permission="customOrders">
+                <TasksPage />
               </PrivateRoute>
             }
           />

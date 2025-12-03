@@ -66,14 +66,20 @@ const dashboardRoutes = require('./routes/dashboard');
 const productRoutes = require('./routes/adminProducts');
 const serviceRoutes = require('./routes/adminServices');
 const testimonialRoutes = require('./routes/adminTestimonials');
-const adminUserRoutes = require('./routes/adminUsers'); // Import new admin user routes
+const adminUserRoutes = require('./routes/adminUsers');
+const customOrderRoutes = require('./routes/adminCustomOrders');
+const projectTypeRoutes = require('./routes/adminProjectTypes');
+const taskRoutes = require('./routes/adminTasks');
 
 app.use('/', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/admin-users', adminUserRoutes); // Use new admin user routes
+app.use('/api/admin-users', adminUserRoutes);
+app.use('/api/custom-orders', customOrderRoutes);
+app.use('/api/project-types', projectTypeRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

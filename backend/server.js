@@ -22,6 +22,7 @@ const serviceRoutes = require('./routes/service');
 const testimonialRoutes = require('./routes/testimonial');
 const paymentRoutes = require('./routes/payment');
 const chatRoutes = require('./routes/chat');
+const customOrderRoutes = require('./routes/customOrder');
 
 // Import AppStats utility
 const { initializeAppStats } = require('./utils/appStatsUpdater');
@@ -58,6 +59,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/custom-orders', customOrderRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
