@@ -16,6 +16,7 @@ import SupportCenterPage from './pages/SupportCenterPage';
 import UsersPage from './pages/UsersPage';
 import ManageAdminsPage from './pages/ManageAdminsPage';
 import CustomOrdersPage from './pages/CustomOrdersPage';
+import OrderCommunicationPage from './pages/OrderCommunicationPage';
 import ProjectTypesPage from './pages/ProjectTypesPage';
 import TasksPage from './pages/TasksPage';
 const OrdersPaymentsPage = () => <DashboardPage />;
@@ -113,6 +114,14 @@ const App = () => (
             element={
               <PrivateRoute permission="customOrders">
                 <CustomOrdersPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/custom-orders/:orderId/communication"
+            element={
+              <PrivateRoute permission="customOrders">
+                <OrderCommunicationPage />
               </PrivateRoute>
             }
           />
