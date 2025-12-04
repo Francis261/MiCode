@@ -48,6 +48,9 @@ router.post('/create', async (req, res) => {
     });
     await newProductOrder.save();
 
+    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:8080'}/payment-success?orderId=${orderId}`;
+    console.log('OxaPay returnUrl being sent:', returnUrl); // Added console log for debugging
+
     const paymentData = {
       amount: amount,
       currency: 'USD', // Assuming USD as default, can be dynamic
@@ -55,7 +58,7 @@ router.post('/create', async (req, res) => {
       feePaidByPayer: 0, // Merchant pays fee
       underPaidCoverage: 2.5, // Acceptable inaccuracy
       callbackUrl: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/callback`,
-      returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:8080'}/payment-success?orderId=${orderId}`,
+      returnUrl: returnUrl,
       description: `Purchase from DevForge: ${products.map(item => item.title).join(', ')}`,
       orderId: orderId,
       email: email,
