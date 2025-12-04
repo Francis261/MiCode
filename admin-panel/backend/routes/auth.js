@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const AdminUser = require('../models/AdminUser');
+const mongoose = require('mongoose'); // Import mongoose to use Types.ObjectId
 
 const router = express.Router();
 
@@ -8,6 +9,11 @@ const router = express.Router();
 router.post('/verify-access', async (req, res) => {
   try {
     const { adminId, accessKey } = req.body;
+
+    // Validate adminId format
+    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+      return res.status(400).json({ success: false, message: 'Invalid Super Admin ID format.' });
+    }
 
     // Verify the Super Admin Key
     if (accessKey !== process.env.SUPER_ADMIN_KEY) {
