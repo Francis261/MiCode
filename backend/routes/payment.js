@@ -130,10 +130,12 @@ router.post('/callback', async (req, res) => {
     if (status === 'Paid') { // Assuming 'Paid' is the status for successful payment
       productOrder.status = 'paid';
       productOrder.transactionId = trackId; // Ensure transactionId is updated if not set during creation
-      // You might want to generate a download link here if it's dynamic
-      // productOrder.downloadLink = `https://yourdomain.com/downloads/${orderId}.zip`;
+      
+      // Set the downloadLink to our internal download endpoint
+      productOrder.downloadLink = `/api/payment/download/${orderId}`;
+      
       await productOrder.save();
-      console.log(`Product Order ${orderId} has been paid`);
+      console.log(`Product Order ${orderId} has been paid and download link set.`);
     } else if (status === 'Failed' || status === 'Canceled') { // Handle other statuses
       productOrder.status = 'failed';
       productOrder.adminNotes = `Payment failed/canceled via OxaPay callback. Status: ${status}`;
@@ -148,6 +150,29 @@ router.post('/callback', async (req, res) => {
   }
 });
 
+// Public endpoint to get product order status for client-side verification
+router.get('/order-status/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const productOrder = await ProductOrder.findOne({ orderId }).select('-adminNotes'); // Exclude admin notes
+
+    if (!productOrder) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    // Only return success if the order is paid
+    if (productOrder.status === 'paid') {
+      res.json({ success: true, order: productOrder });
+    } else {
+      res.status(400).json({ success: false, message: `Order status is ${productOrder.status}. Payment not confirmed.` });
+    }
+  } catch (error) {
+    console.error('Error fetching order status:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+});
+
+
 // Download endpoint (protected - should verify payment)
 router.get('/download/:orderId', async (req, res) => {
   try {
@@ -161,35 +186,34 @@ router.get('/download/:orderId', async (req, res) => {
 
     // If a downloadLink is stored in the order, use that directly
     if (productOrder.downloadLink) {
-      return res.redirect(productOrder.downloadLink);
+      // If the stored downloadLink is an S3 pre-signed URL, redirect directly.
+      // If it's our internal /api/payment/download/:orderId, we need to generate the S3 URL here.
+      // Since we're setting it to our internal endpoint in the callback, we proceed to generate the S3 URL.
+
+      const firstProduct = productOrder.products[0];
+      if (!firstProduct) {
+        return res.status(404).json({ message: 'No product found in order to download.' });
+      }
+
+      const s3Key = `products/${firstProduct.productId}.zip`; 
+      const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+
+      if (!bucketName) {
+        return res.status(500).json({ message: 'S3 bucket name not configured.' });
+      }
+
+      const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+      });
+
+      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // URL valid for 1 hour
+      return res.redirect(signedUrl);
+
+    } else {
+      // This case should ideally not be hit if downloadLink is always set on 'paid' status.
+      return res.status(404).json({ message: 'Download link not available for this order. Please contact support.' });
     }
-
-    // Fallback to generating a pre-signed URL if no specific downloadLink is stored
-    // This assumes a convention like `products/{orderId}.zip` or `products/{productId}.zip`
-    // For simplicity, let's assume the first product in the order determines the file.
-    const firstProduct = productOrder.products[0];
-    if (!firstProduct) {
-      return res.status(404).json({ message: 'No product found in order to download.' });
-    }
-
-    // Example: Assuming product files are named after their static 'id'
-    const s3Key = `products/${firstProduct.productId}.zip`; 
-    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
-
-    if (!bucketName) {
-      return res.status(500).json({ message: 'S3 bucket name not configured.' });
-    }
-
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: s3Key,
-    });
-
-    // Generate a pre-signed URL for direct download
-    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // URL valid for 1 hour
-
-    // Redirect the user to the signed URL to download the file
-    res.redirect(signedUrl);
 
   } catch (error) {
     console.error('Download error:', error);
