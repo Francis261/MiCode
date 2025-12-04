@@ -28,6 +28,32 @@ export interface Attachment {
   size?: number;
 }
 
+export interface CostItem {
+  _id?: string;
+  description: string;
+  amount: number;
+  quantity: number;
+}
+
+export interface Payment {
+  _id?: string;
+  amount: number;
+  method?: string;
+  transactionId?: string;
+  paidAt?: string;
+  notes?: string;
+}
+
+export interface Developer {
+  name?: string;
+  email?: string;
+  phone?: string;
+  rank?: string;
+  profilePhoto?: string;
+  skills?: string[];
+  bio?: string;
+}
+
 export interface CustomOrder {
   _id: string;
   orderId: string;
@@ -56,6 +82,11 @@ export interface CustomOrder {
   actualEndDate?: string;
   messages?: OrderMessage[];
   assignedTo?: string;
+  developer?: Developer;
+  costItems?: CostItem[];
+  totalCost?: number;
+  payments?: Payment[];
+  totalPaid?: number;
   adminNotes?: string;
   lastContactedAt?: string;
   viewedByAdmin?: boolean;
