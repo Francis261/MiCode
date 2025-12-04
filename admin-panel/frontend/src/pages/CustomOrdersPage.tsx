@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAdminCustomOrders } from "@/hooks/useAdminCustomOrders";
 import { CustomOrder } from "@/types/custom-order";
@@ -36,22 +37,19 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function CustomOrdersPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all"); // Changed initial state to "all"
   const [priorityFilter, setPriorityFilter] = useState<string>("all"); // Changed initial state to "all"
   const [selectedOrder, setSelectedOrder] = useState<CustomOrder | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [emailSubject, setEmailSubject] = useState("");
-  const [isEmail, setIsEmail] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState("");
   const [quoteTimeline, setQuoteTimeline] = useState("");
   const [quoteNotes, setQuoteNotes] = useState("");
 
-  const { orders, isLoading, pagination, updateOrder, deleteOrder, addMessage, sendQuote } = useAdminCustomOrders({
+  const { orders, isLoading, pagination, updateOrder, deleteOrder, sendQuote } = useAdminCustomOrders({
     search: search || undefined,
     status: statusFilter === "all" ? undefined : statusFilter, // Pass undefined if "all"
     priority: priorityFilter === "all" ? undefined : priorityFilter, // Pass undefined if "all"
@@ -65,17 +63,6 @@ export default function CustomOrdersPage() {
     updateOrder.mutate({ id: orderId, data: { priority: priority as CustomOrder["priority"] } });
   };
 
-  const handleSendMessage = () => {
-    if (!selectedOrder || !messageText.trim()) return;
-    addMessage.mutate({
-      id: selectedOrder._id,
-      message: { message: messageText, isEmail, emailSubject: isEmail ? emailSubject : undefined },
-    });
-    setMessageText("");
-    setEmailSubject("");
-    setIsEmail(false);
-    setIsMessageOpen(false);
-  };
 
   const handleSendQuote = () => {
     if (!selectedOrder || !quoteAmount || !quoteTimeline) return;
@@ -247,7 +234,7 @@ export default function CustomOrdersPage() {
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            onClick={() => { setSelectedOrder(order); setIsMessageOpen(true); }}
+                            onClick={() => navigate(`/custom-orders/${order._id}/communication`)}
                           >
                             <MessageSquare className="h-4 w-4" />
                           </Button>
@@ -414,49 +401,7 @@ export default function CustomOrdersPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Send Message Dialog */}
-        <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Send Message to {selectedOrder?.clientName}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isEmail"
-                  checked={isEmail}
-                  onChange={(e) => setIsEmail(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="isEmail">Send as Email</Label>
-              </div>
-              {isEmail && (
-                <div>
-                  <Label>Email Subject</Label>
-                  <Input
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    placeholder="Re: Your project request"
-                  />
-                </div>
-              )}
-              <div> {/* This div was previously incorrectly closed */}
-                <Label>Message</Label>
-                <Textarea
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Type your message..."
-                  rows={4}
-                />
-              </div>
-              <Button onClick={handleSendMessage} className="w-full" disabled={addMessage.isPending}>
-                {addMessage.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-                Send Message
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+
 
         {/* Send Quote Dialog */}
         <Dialog open={isQuoteOpen} onOpenChange={setIsQuoteOpen}>
