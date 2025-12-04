@@ -70,6 +70,7 @@ const adminUserRoutes = require('./routes/adminUsers');
 const customOrderRoutes = require('./routes/adminCustomOrders');
 const projectTypeRoutes = require('./routes/adminProjectTypes');
 const taskRoutes = require('./routes/adminTasks');
+const productOrderRoutes = require('./routes/adminProductOrders'); // New import
 
 app.use('/', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -80,6 +81,7 @@ app.use('/api/admin-users', adminUserRoutes);
 app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/project-types', projectTypeRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/product-orders', productOrderRoutes); // New route registration
 
 // Health check
 app.get('/health', (req, res) => {

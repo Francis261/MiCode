@@ -10,8 +10,9 @@ const PaymentSuccess = () => {
   const orderId = searchParams.get("orderId") || "N/A";
 
   const handleDownload = () => {
-    // Replace with actual download URL from your backend
-    const downloadUrl = `/api/download/${orderId}`;
+    // The backend /api/payment/download/:orderId endpoint will now look up the ProductOrder
+    // and either use a stored downloadLink or generate a pre-signed URL based on product details.
+    const downloadUrl = `/api/payment/download/${orderId}`;
     window.open(downloadUrl, "_blank");
   };
 

@@ -47,6 +47,16 @@ const Cart = () => {
     setIsLoading(true);
 
     try {
+      // Prepare product details for the backend
+      const productsForOrder = cartItems.map(item => ({
+        id: item.id, // Use the static product ID
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+        category: item.category,
+      }));
+
       const response = await fetch(`${API_URL}/api/payment/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,7 +64,7 @@ const Cart = () => {
           name: formData.name,
           email: formData.email,
           amount: cartTotal,
-          productName: cartItems.map(item => `${item.title} (x${item.quantity})`).join(', '),
+          products: productsForOrder, // Send the array of products
         }),
       });
 

@@ -20,7 +20,7 @@ const navItems = [
   { to: "/custom-orders", label: "Custom Orders", icon: ShoppingBag, permission: "customOrders" },
   { to: "/project-types", label: "Project Types", icon: FolderKanban, permission: "customOrders" },
   { to: "/tasks", label: "Tasks", icon: ListTodo, permission: "customOrders" },
-  { to: "/orders-payments", label: "Orders & Payments", icon: DollarSign, permission: "ordersPayments" },
+  { to: "/orders-payments", label: "Orders & Payments", icon: DollarSign, permission: "ordersPayments" }, // New item
   { to: "/users", label: "Users", icon: Users, permission: "users" },
   { to: "/manage-admins", label: "Manage Admins", icon: UserCircle, permission: "manageAdmins" },
   { to: "/support-center", label: "Support Center", icon: MessageSquareText, permission: "support" },

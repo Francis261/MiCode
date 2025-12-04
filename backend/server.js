@@ -10,6 +10,7 @@ const Product = require('./models/Product');
 const Service = require('./models/Service');
 const Testimonial = require('./models/Testimonial');
 const AppStats = require('./models/AppStats'); // Import AppStats
+const ProductOrder = require('./models/ProductOrder'); // Import ProductOrder
 
 // Import data from backend/data (for seeding)
 const { products } = require('./data/products');

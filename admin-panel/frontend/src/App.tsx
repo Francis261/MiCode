@@ -19,7 +19,7 @@ import CustomOrdersPage from './pages/CustomOrdersPage';
 import OrderCommunicationPage from './pages/OrderCommunicationPage';
 import ProjectTypesPage from './pages/ProjectTypesPage';
 import TasksPage from './pages/TasksPage';
-const OrdersPaymentsPage = () => <DashboardPage />;
+import OrdersPaymentsPage from './pages/OrdersPaymentsPage'; // Import the new page
 
 const queryClient = new QueryClient();
 
@@ -129,7 +129,7 @@ const App = () => (
             path="/orders-payments"
             element={
               <PrivateRoute permission="ordersPayments">
-                <OrdersPaymentsPage />
+                <OrdersPaymentsPage /> {/* Updated to new page */}
               </PrivateRoute>
             }
           />
