@@ -73,27 +73,28 @@ router.post('/create', async (req, res) => {
 
     const data = await response.json();
 
-    if (data.status === 1 && data.payLink) { // OxaPay v1 uses 'status: 1' for success
+    // Correctly check OxaPay's response status and access payment_url
+    if (data.status === 200 && data.data && data.data.payment_url) { 
       // Update the ProductOrder with OxaPay's trackId
       newProductOrder.transactionId = data.data.track_id;
       await newProductOrder.save();
 
       res.json({
         success: true,
-        paymentUrl: data.payLink,
+        paymentUrl: data.data.payment_url, // Correctly access payment_url
         orderId: orderId,
         trackId: data.data.track_id,
       });
     } else {
       // If OxaPay invoice creation fails, mark the order as failed
       newProductOrder.status = 'failed';
-      newProductOrder.adminNotes = `OxaPay invoice creation failed: ${data.message || JSON.stringify(data.error)}`;
+      newProductOrder.adminNotes = `OxaPay invoice creation failed: ${data.message || JSON.stringify(data.error || data)}`;
       await newProductOrder.save();
 
       res.status(400).json({
         success: false,
         message: data.message || 'Failed to create payment',
-        errorDetails: data.error,
+        errorDetails: data.error || data, // Include full data for better debugging
       });
     }
   } catch (error) {
