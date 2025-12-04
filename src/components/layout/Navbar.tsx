@@ -28,7 +28,7 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
-            <span className="font-display text-xl font-bold">DevForge</span>
+            <span className="font-display text-xl font-bold">DevGorge</span>
           </Link>
 
           {/* Desktop Navigation */}
