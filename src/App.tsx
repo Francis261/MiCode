@@ -9,6 +9,7 @@ import Store from "./pages/Store";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
 import CustomOrder from "./pages/CustomOrder";
+import OrderTracking from "./pages/OrderTracking";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Chat from "./pages/Chat";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/custom-order" element={<CustomOrder />} />
+            <Route path="/track-order" element={<OrderTracking />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/chat" element={<Chat />} />

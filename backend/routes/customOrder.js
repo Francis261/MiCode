@@ -15,6 +15,30 @@ const orderMessageSchema = new mongoose.Schema({
   readAt: Date
 }, { timestamps: true });
 
+const costItemSchema = new mongoose.Schema({
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  quantity: { type: Number, default: 1 }
+});
+
+const paymentSchema = new mongoose.Schema({
+  amount: { type: Number, required: true },
+  method: String,
+  transactionId: String,
+  paidAt: { type: Date, default: Date.now },
+  notes: String
+});
+
+const developerSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  phone: String,
+  rank: String,
+  profilePhoto: String,
+  skills: [String],
+  bio: String
+});
+
 const customOrderSchema = new mongoose.Schema({
   orderId: { type: String, unique: true },
   clientName: { type: String, required: true },
@@ -44,7 +68,13 @@ const customOrderSchema = new mongoose.Schema({
   assignedTo: String,
   adminNotes: String,
   lastContactedAt: Date,
-  viewedByAdmin: { type: Boolean, default: false }
+  viewedByAdmin: { type: Boolean, default: false },
+  // New fields for tracking
+  developer: developerSchema,
+  costItems: [costItemSchema],
+  totalCost: { type: Number, default: 0 },
+  payments: [paymentSchema],
+  totalPaid: { type: Number, default: 0 }
 }, { timestamps: true });
 
 customOrderSchema.pre('save', async function(next) {
@@ -98,20 +128,56 @@ router.post('/submit', async (req, res) => {
   }
 });
 
-// Public: Get order status by orderId and email (for clients to check their order)
-router.get('/status/:orderId', async (req, res) => {
+// Public: Get full order details by orderId and email (for clients to track their order)
+router.get('/track/:orderId', async (req, res) => {
   try {
     const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
     const order = await CustomOrder.findOne({ 
       orderId: req.params.orderId,
-      clientEmail: email 
-    }).select('orderId status projectType budget timeline quotedAmount quotedTimeline createdAt');
+      clientEmail: email.toLowerCase()
+    }).select('-adminNotes -viewedByAdmin');
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found. Please check your Order ID and email.' });
+    }
+    
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Public: Client sends a message to the order
+router.post('/track/:orderId/message', async (req, res) => {
+  try {
+    const { email, message } = req.body;
+    if (!email || !message) {
+      return res.status(400).json({ message: 'Email and message are required' });
+    }
+    
+    const order = await CustomOrder.findOne({ 
+      orderId: req.params.orderId,
+      clientEmail: email.toLowerCase()
+    });
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
     
-    res.json(order);
+    order.messages.push({
+      sender: 'client',
+      senderName: order.clientName,
+      senderEmail: email,
+      message
+    });
+    
+    await order.save();
+    
+    res.json({ success: true, messages: order.messages });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

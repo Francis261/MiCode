@@ -20,6 +20,45 @@ const orderMessageSchema = new mongoose.Schema({
   readAt: Date
 }, { timestamps: true });
 
+const costItemSchema = new mongoose.Schema({
+  description: {
+    type: String,
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  quantity: {
+    type: Number,
+    default: 1
+  }
+});
+
+const paymentSchema = new mongoose.Schema({
+  amount: {
+    type: Number,
+    required: true
+  },
+  method: String,
+  transactionId: String,
+  paidAt: {
+    type: Date,
+    default: Date.now
+  },
+  notes: String
+});
+
+const developerSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  phone: String,
+  rank: String,
+  profilePhoto: String,
+  skills: [String],
+  bio: String
+});
+
 const customOrderSchema = new mongoose.Schema({
   orderId: {
     type: String,
@@ -107,6 +146,23 @@ const customOrderSchema = new mongoose.Schema({
   
   // Assignment
   assignedTo: String,
+  
+  // Developer Info (visible to client)
+  developer: developerSchema,
+  
+  // Cost Breakdown
+  costItems: [costItemSchema],
+  totalCost: {
+    type: Number,
+    default: 0
+  },
+  
+  // Payments
+  payments: [paymentSchema],
+  totalPaid: {
+    type: Number,
+    default: 0
+  },
   
   // Notes
   adminNotes: String,

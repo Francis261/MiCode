@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Send, CheckCircle, Loader2 } from "lucide-react";
+import { Send, CheckCircle, Loader2, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,9 +225,17 @@ export default function CustomOrder() {
               <p className="font-display text-2xl font-bold text-primary">{orderId}</p>
             </motion.div>
 
-            <Button onClick={() => setIsSubmitted(false)} variant="outline">
-              Submit Another Request
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={() => setIsSubmitted(false)} variant="outline">
+                Submit Another Request
+              </Button>
+              <Button asChild>
+                <Link to="/track-order">
+                  <Search className="h-4 w-4 mr-2" />
+                  Track Your Order
+                </Link>
+              </Button>
+            </div>
           </div>
         </section>
       </Layout>
@@ -249,10 +258,22 @@ export default function CustomOrder() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-muted-foreground text-lg max-w-2xl"
+            className="text-muted-foreground text-lg max-w-2xl mb-6"
           >
             Tell us about your project and we'll create a tailored solution just for you.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Button variant="outline" asChild>
+              <Link to="/track-order">
+                <Search className="h-4 w-4 mr-2" />
+                Already have an order? Track it here
+              </Link>
+            </Button>
+          </motion.div>
         </div>
       </section>
 
