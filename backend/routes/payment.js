@@ -74,6 +74,13 @@ router.post('/create', async (req, res) => {
       body: JSON.stringify(paymentData),
     });
 
+    // Log raw response text if not OK to help debug non-JSON responses
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OxaPay API raw error response:', errorText);
+      throw new Error(`OxaPay API returned non-OK status: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
 
     // Correctly check OxaPay's response status and access payment_url
