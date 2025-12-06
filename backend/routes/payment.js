@@ -59,10 +59,10 @@ router.post('/create', async (req, res) => {
       underPaidCoverage: 2.5, // Acceptable inaccuracy
       callbackUrl: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/callback`,
       returnUrl: returnUrl,
-      description: `Purchase from DevForge: ${products.map(item => item.title).join(', ')}`,
+      description: `Purchase from DevGorge: ${products.map(item => item.title).join(', ')}`,
       orderId: orderId,
       email: email,
-      sandbox: process.env.NODE_ENV !== 'production', // Use sandbox in development
+      sandbox: false, // Force production mode for real crypto
     };
 
     const response = await fetch(OXAPAY_INVOICE_URL, {
@@ -184,36 +184,29 @@ router.get('/download/:orderId', async (req, res) => {
       return res.status(403).json({ message: 'Payment not verified or order not found' });
     }
 
-    // If a downloadLink is stored in the order, use that directly
-    if (productOrder.downloadLink) {
-      // If the stored downloadLink is an S3 pre-signed URL, redirect directly.
-      // If it's our internal /api/payment/download/:orderId, we need to generate the S3 URL here.
-      // Since we're setting it to our internal endpoint in the callback, we proceed to generate the S3 URL.
+    // If a downloadLink is stored in the order, use that directly.
+    // If it's our internal /api/payment/download/:orderId, we need to generate the S3 URL here.
+    // Since we're setting it to our internal endpoint in the callback, we proceed to generate the S3 URL.
 
-      const firstProduct = productOrder.products[0];
-      if (!firstProduct) {
-        return res.status(404).json({ message: 'No product found in order to download.' });
-      }
-
-      const s3Key = `products/${firstProduct.productId}.zip`; 
-      const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
-
-      if (!bucketName) {
-        return res.status(500).json({ message: 'S3 bucket name not configured.' });
-      }
-
-      const command = new GetObjectCommand({
-        Bucket: bucketName,
-        Key: s3Key,
-      });
-
-      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // URL valid for 1 hour
-      return res.redirect(signedUrl);
-
-    } else {
-      // This case should ideally not be hit if downloadLink is always set on 'paid' status.
-      return res.status(404).json({ message: 'Download link not available for this order. Please contact support.' });
+    const firstProduct = productOrder.products[0];
+    if (!firstProduct) {
+      return res.status(404).json({ message: 'No product found in order to download.' });
     }
+
+    const s3Key = `products/${firstProduct.productId}.zip`; 
+    const bucketName = process.env.IDRIVE_E2_BUCKET_NAME;
+
+    if (!bucketName) {
+      return res.status(500).json({ message: 'S3 bucket name not configured.' });
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+    });
+
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // URL valid for 1 hour
+    return res.redirect(signedUrl);
 
   } catch (error) {
     console.error('Download error:', error);
