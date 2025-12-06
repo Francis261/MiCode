@@ -27,7 +27,7 @@ export function Navbar() {
         <div className="mt-4 flex h-16 items-center justify-between rounded-2xl bg-glass px-6">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src="/assets/devgorge-logo.png" alt="DevGorge Logo" className="h-8 w-auto" />
+            <img src="/assets/devgorge-logo.png" alt="DevGorge Logo" className="h-8 w-auto rounded-full" />
           </Link>
 
           {/* Desktop Navigation */}
