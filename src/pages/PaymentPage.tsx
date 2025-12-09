@@ -9,9 +9,12 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import QRCode from "qrcode.react";
+import * as QRCodeModule from "qrcode.react"; // Changed import to namespace import
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
+
+// Access the QRCode component from the namespace import
+const QRCode = QRCodeModule.default || QRCodeModule;
 
 interface CoinOption {
   name: string;
