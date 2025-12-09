@@ -23,7 +23,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Models
 const AdminUser = require('./models/AdminUser');
-const ChatUser = require('../../../backend/models/ChatUser'); // Corrected import path for ChatUser
+const ChatUser = require('../../backend/models/ChatUser'); // Corrected import path for ChatUser
 
 // Seed Super Admin (Run once on startup)
 const seedSuperAdmin = async () => {
