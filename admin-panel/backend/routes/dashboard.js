@@ -2,6 +2,8 @@ const express = require('express');
 const { authMiddleware, checkPermission } = require('../middleware/authMiddleware');
 const Product = require('../models/Product');
 const AppStats = require('../models/AppStats');
+const ProductOrder = require('../models/ProductOrder'); // Import ProductOrder model
+const ChatUser = require('../models/ChatUser'); // Import ChatUser model
 
 const router = express.Router();
 
@@ -12,28 +14,39 @@ router.use(checkPermission('dashboard'));
 // Get Dashboard Stats
 router.get('/stats', async (req, res) => {
   try {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
     // Get app stats from the database
     const appStats = await AppStats.findOne();
     
-    // Calculate mock data for sales and users (in real app, you'd have these collections)
+    // Calculate real data for sales and users
+    const totalSalesResult = await ProductOrder.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    const totalSales = totalSalesResult.length > 0 ? totalSalesResult[0].total : 0;
+
+    const sales24HrsResult = await ProductOrder.aggregate([
+      { $match: { status: 'paid', createdAt: { $gte: twentyFourHoursAgo } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    const sales24Hrs = sales24HrsResult.length > 0 ? sales24HrsResult[0].total : 0;
+
+    const totalUsers = await ChatUser.countDocuments();
+    const newUsers24Hrs = await ChatUser.countDocuments({ createdAt: { $gte: twentyFourHoursAgo } });
+
     const totalProducts = appStats?.totalProducts || 0;
     const activeProducts = appStats?.activeProducts || 0;
 
-    // Mock calculations (replace with real data from your database)
-    const totalSales = '$45,231.89'; // This would come from an Orders collection
-    const newUsers = '+201'; // This would come from a Users collection
-    const salesChange = '+20.1% from last month';
-    const usersChange = '+10.3% from last month';
-    const productsChange = activeProducts > 0 ? `${activeProducts} active` : 'No active products';
-
     res.json({
-      totalSales,
-      newUsers,
+      totalSales: totalSales.toFixed(2),
+      sales24Hrs: sales24Hrs.toFixed(2),
+      newUsers24Hrs,
+      totalUsers,
       activeProducts,
       totalProducts,
-      salesChange,
-      usersChange,
-      productsChange,
+      // Removed mock change percentages, frontend can calculate if needed or they can be added here
     });
   } catch (error) {
     console.error('Dashboard stats error:', error);
@@ -44,15 +57,37 @@ router.get('/stats', async (req, res) => {
 // Get Sales Overview (Chart Data)
 router.get('/sales-overview', async (req, res) => {
   try {
-    // Mock data - replace with real sales data from Orders collection
-    const salesOverview = [
-      { name: 'Jan', sales: 4000 },
-      { name: 'Feb', sales: 3000 },
-      { name: 'Mar', sales: 5000 },
-      { name: 'Apr', sales: 2780 },
-      { name: 'May', sales: 1890 },
-      { name: 'Jun', sales: 2390 },
-    ];
+    const salesOverview = await ProductOrder.aggregate([
+      { $match: { status: 'paid' } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+          },
+          totalSales: { $sum: '$totalAmount' },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      {
+        $project: {
+          _id: 0,
+          name: {
+            $dateToString: {
+              format: '%b', // Abbreviated month name
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: 1,
+                },
+              },
+            },
+          },
+          sales: '$totalSales',
+        },
+      },
+    ]);
 
     res.json(salesOverview);
   } catch (error) {
@@ -64,16 +99,25 @@ router.get('/sales-overview', async (req, res) => {
 // Get Product Performance (Chart Data)
 router.get('/product-performance', async (req, res) => {
   try {
-    // Get top 5 products by rating (in real app, you'd aggregate by sales)
-    const topProducts = await Product.find({ isHidden: false })
-      .sort({ rating: -1, reviews: -1 })
-      .limit(5)
-      .select('title rating reviews');
-
-    const productPerformance = topProducts.map(product => ({
-      name: product.title.substring(0, 20), // Truncate for chart display
-      sales: product.reviews * 10, // Mock calculation (reviews * avg sale)
-    }));
+    const productPerformance = await ProductOrder.aggregate([
+      { $match: { status: 'paid' } },
+      { $unwind: '$products' },
+      {
+        $group: {
+          _id: '$products.title',
+          totalSales: { $sum: { $multiply: ['$products.price', '$products.quantity'] } },
+        },
+      },
+      { $sort: { totalSales: -1 } },
+      { $limit: 5 }, // Top 5 products
+      {
+        $project: {
+          _id: 0,
+          name: '$_id',
+          sales: '$totalSales',
+        },
+      },
+    ]);
 
     res.json(productPerformance);
   } catch (error) {

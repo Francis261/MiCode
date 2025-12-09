@@ -2,7 +2,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
-import { Users, Package, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, Package, DollarSign, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -24,6 +24,11 @@ export default function DashboardPage() {
   const { data: salesOverview, isLoading: isLoadingSales, error: salesError } = useSalesOverview();
   const { data: productPerformance, isLoading: isLoadingProductPerformance, error: productPerformanceError } = useProductPerformance();
 
+  // Helper to format currency
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount));
+  };
+
   return (
     <AdminLayout>
       <motion.div
@@ -35,8 +40,8 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mb-8">Your role: <span className="font-semibold capitalize">{admin?.role}</span></p>
 
         {isLoadingStats ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <div className="h-4 w-24 bg-muted rounded" />
@@ -52,44 +57,45 @@ export default function DashboardPage() {
         ) : statsError ? (
           <p className="text-destructive">Error loading dashboard stats: {statsError.message}</p>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalSales}</div>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  {stats?.salesChange.startsWith('+') ? <TrendingUp className="h-3 w-3 mr-1 text-green-500" /> : <TrendingDown className="h-3 w-3 mr-1 text-red-500" />}
-                  {stats?.salesChange}
-                </p>
+                <div className="text-2xl font-bold">{formatCurrency(stats?.totalSales || 0)}</div>
+                <p className="text-xs text-muted-foreground">All time sales</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Users</CardTitle>
+                <CardTitle className="text-sm font-medium">Sales (24 hrs)</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats?.sales24Hrs || 0)}</div>
+                <p className="text-xs text-muted-foreground">Sales in the last 24 hours</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.newUsers}</div>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  {stats?.usersChange.startsWith('+') ? <TrendingUp className="h-3 w-3 mr-1 text-green-500" /> : <TrendingDown className="h-3 w-3 mr-1 text-red-500" />}
-                  {stats?.usersChange}
-                </p>
+                <div className="text-2xl font-bold">{stats?.totalUsers}</div>
+                <p className="text-xs text-muted-foreground">All registered users</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Products</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">New Users (24 hrs)</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.activeProducts} / {stats?.totalProducts}</div>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  {stats?.productsChange.startsWith('+') ? <TrendingUp className="h-3 w-3 mr-1 text-green-500" /> : <TrendingDown className="h-3 w-3 mr-1 text-red-500" />}
-                  {stats?.productsChange}
-                </p>
+                <div className="text-2xl font-bold">{stats?.newUsers24Hrs}</div>
+                <p className="text-xs text-muted-foreground">New users in the last 24 hours</p>
               </CardContent>
             </Card>
           </div>
@@ -120,6 +126,7 @@ export default function DashboardPage() {
                         borderRadius: '0.5rem',
                       }}
                       itemStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(value: number) => formatCurrency(value)}
                     />
                     <Legend />
                     <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} />
@@ -152,6 +159,7 @@ export default function DashboardPage() {
                         borderRadius: '0.5rem',
                       }}
                       itemStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(value: number) => formatCurrency(value)}
                     />
                     <Legend />
                     <Bar dataKey="sales" fill="hsl(var(--accent))" />

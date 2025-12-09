@@ -3,12 +3,12 @@ import { adminFetcher } from "@/lib/api";
 
 interface DashboardStats {
   totalSales: string;
-  newUsers: string;
+  sales24Hrs: string; // New field for sales in last 24 hours
+  newUsers24Hrs: number; // New field for new users in last 24 hours
+  totalUsers: number; // New field for total users
   activeProducts: number;
   totalProducts: number;
-  salesChange: string;
-  usersChange: string;
-  productsChange: string;
+  // Removed salesChange, usersChange, productsChange as they are no longer directly returned
 }
 
 interface SalesDataPoint {
