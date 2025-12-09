@@ -50,6 +50,20 @@ const productOrderSchema = new mongoose.Schema({
   adminNotes: {
     type: String,
   },
+  // New fields for static address payment
+  staticWalletAddress: {
+    type: String,
+    sparse: true, // Allow multiple nulls, but unique if present
+  },
+  paymentNetwork: {
+    type: String,
+  },
+  paymentCurrency: {
+    type: String,
+  },
+  qrCodeUrl: { // To store the QR code image URL if OxaPay provides one, or if we generate and store it
+    type: String,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('ProductOrder', productOrderSchema);

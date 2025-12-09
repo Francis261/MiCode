@@ -15,6 +15,7 @@ import Contact from "./pages/Contact";
 import Chat from "./pages/Chat";
 import Cart from "./pages/Cart";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentPage from "./pages/PaymentPage"; // Import the new PaymentPage
 import NotFound from "./pages/NotFound";
 import { CartProvider } from "@/context/CartContext";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/payment" element={<PaymentPage />} /> {/* New Payment Page Route */}
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

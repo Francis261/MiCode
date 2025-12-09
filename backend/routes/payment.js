@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const ProductOrder = require('../models/ProductOrder'); // Import the new ProductOrder model
+const ProductOrder = require('../models/ProductOrder');
 
-// OxaPay API endpoint for invoice generation
-const OXAPAY_INVOICE_URL = 'https://api.oxapay.com/v1/payment/invoice';
+// OxaPay API endpoint for static address generation
+const OXAPAY_STATIC_ADDRESS_URL = 'https://api.oxapay.com/v1/payment/static-address';
 
 // Configure iDrive E2 S3 client
 const s3Client = new S3Client({
@@ -18,107 +18,104 @@ const s3Client = new S3Client({
   forcePathStyle: true, // Required for some S3-compatible storage providers
 });
 
-// Create payment
-router.post('/create', async (req, res) => {
+// New endpoint to generate a static wallet address
+router.post('/generate-static-address', async (req, res) => {
   try {
-    const { name, email, amount, products } = req.body; // 'products' array now expected
+    const { orderId, clientEmail, network, to_currency } = req.body;
 
-    if (!name || !email || !amount || !products || products.length === 0) {
-      return res.status(400).json({ message: 'Missing required fields: name, email, amount, and products' });
+    if (!orderId || !clientEmail || !network || !to_currency) {
+      return res.status(400).json({ message: 'Missing required fields: orderId, clientEmail, network, to_currency' });
     }
 
-    const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    let productOrder = await ProductOrder.findOne({ orderId });
 
-    // Create a pending ProductOrder in your database
-    const newProductOrder = new ProductOrder({
-      orderId,
-      clientName: name,
-      clientEmail: email,
-      totalAmount: amount,
-      products: products.map(p => ({
-        productId: p.id, // Use the static 'id' from the frontend product
-        title: p.title,
-        price: p.price,
-        quantity: p.quantity,
-        image: p.image,
-        category: p.category,
-      })),
-      status: 'pending',
-      paymentMethod: 'OxaPay',
-    });
-    await newProductOrder.save();
+    if (!productOrder) {
+      return res.status(404).json({ message: 'Product order not found.' });
+    }
 
-    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:8080'}/payment-success?orderId=${orderId}`;
-    console.log('OxaPay returnUrl being sent:', returnUrl); // Added console log for debugging
+    // Check if a static address for this currency/network already exists for this order
+    if (productOrder.staticWalletAddress && productOrder.paymentNetwork === network && productOrder.paymentCurrency === to_currency) {
+      return res.json({
+        success: true,
+        message: 'Existing static address retrieved.',
+        address: productOrder.staticWalletAddress,
+        network: productOrder.paymentNetwork,
+        currency: productOrder.paymentCurrency,
+        trackId: productOrder.transactionId,
+        qrCodeUrl: productOrder.qrCodeUrl, // Return existing QR code URL if available
+      });
+    }
+
+    const callbackUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/callback`;
 
     const paymentData = {
-      amount: amount,
-      currency: 'USD', // Assuming USD as default, can be dynamic
-      lifeTime: 30, // 30 minutes
-      feePaidByPayer: 0, // Merchant pays fee
-      underPaidCoverage: 2.5, // Acceptable inaccuracy
-      callbackUrl: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/callback`,
-      returnUrl: returnUrl,
-      description: `Purchase from DevGorge: ${products.map(item => item.title).join(', ')}`,
-      orderId: orderId,
-      email: email,
-      sandbox: false, // Force production mode for real crypto
+      network: network,
+      to_currency: to_currency,
+      auto_withdrawal: 0, // 0 indicates amount will be credited to OxaPay balance
+      callback_url: callbackUrl,
+      email: clientEmail,
+      order_id: orderId,
+      description: `Payment for DevGorge Order: ${orderId}`,
     };
 
-    const response = await fetch(OXAPAY_INVOICE_URL, {
+    const response = await fetch(OXAPAY_STATIC_ADDRESS_URL, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'merchant_api_key': process.env.OXAPAY_MERCHANT_API_KEY, // Use the new API key
+        'merchant_api_key': process.env.OXAPAY_MERCHANT_API_KEY,
       },
       body: JSON.stringify(paymentData),
     });
 
-    // Log raw response text if not OK to help debug non-JSON responses
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OxaPay API raw error response:', errorText);
+      console.error('OxaPay Static Address API raw error response:', errorText);
       throw new Error(`OxaPay API returned non-OK status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
 
-    // Correctly check OxaPay's response status and access payment_url
-    if (data.status === 200 && data.data && data.data.payment_url) { 
-      // Update the ProductOrder with OxaPay's trackId
-      newProductOrder.transactionId = data.data.track_id;
-      await newProductOrder.save();
+    if (data.status === 200 && data.data && data.data.address) {
+      productOrder.staticWalletAddress = data.data.address;
+      productOrder.paymentNetwork = data.data.network;
+      productOrder.paymentCurrency = data.data.to_currency;
+      productOrder.transactionId = data.data.track_id; // OxaPay's track_id for static address
+      // OxaPay doesn't return a QR code URL directly, frontend will generate it.
+      // productOrder.qrCodeUrl = data.data.qr_code_url; // If OxaPay ever adds this
+
+      await productOrder.save();
 
       res.json({
         success: true,
-        paymentUrl: data.data.payment_url, // Correctly access payment_url
-        orderId: orderId,
+        message: 'Static address generated successfully!',
+        address: data.data.address,
+        network: data.data.network,
+        currency: data.data.to_currency,
         trackId: data.data.track_id,
+        // qrCodeUrl: data.data.qr_code_url, // If OxaPay ever adds this
       });
     } else {
-      // If OxaPay invoice creation fails, mark the order as failed
-      newProductOrder.status = 'failed';
-      newProductOrder.adminNotes = `OxaPay invoice creation failed: ${data.message || JSON.stringify(data.error || data)}`;
-      await newProductOrder.save();
+      productOrder.adminNotes = `OxaPay static address generation failed: ${data.message || JSON.stringify(data.error || data)}`;
+      await productOrder.save(); // Save notes even if failed
 
       res.status(400).json({
         success: false,
-        message: data.message || 'Failed to create payment',
-        errorDetails: data.error || data, // Include full data for better debugging
+        message: data.message || 'Failed to generate static address',
+        errorDetails: data.error || data,
       });
     }
   } catch (error) {
-    console.error('Payment creation error:', error);
+    console.error('Generate static address error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Payment callback (webhook from OxaPay)
+// Payment callback (webhook from OxaPay) - Updated to handle static address payments
 router.post('/callback', async (req, res) => {
   try {
-    const { status, orderId, trackId, amount } = req.body;
+    const { status, orderId, trackId, amount, to_currency, network } = req.body; // Added to_currency, network
 
-    console.log('Payment callback received:', { status, orderId, trackId, amount });
+    console.log('Payment callback received:', { status, orderId, trackId, amount, to_currency, network });
 
     // IMPORTANT: Verify the callback is from OxaPay using HMAC verification
     // This is crucial for security and preventing fake payment notifications.
@@ -134,16 +131,26 @@ router.post('/callback', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product order not found' });
     }
 
-    if (status === 'Paid') { // Assuming 'Paid' is the status for successful payment
+    // For static addresses, the trackId from the callback should match the one stored
+    if (productOrder.transactionId !== trackId) {
+      console.warn(`Callback trackId mismatch for order ${orderId}. Expected ${productOrder.transactionId}, got ${trackId}`);
+      // This might indicate a different payment or a security issue. Handle accordingly.
+      // For now, we'll proceed but log the warning.
+    }
+
+    if (status === 'Paid') {
       productOrder.status = 'paid';
-      productOrder.transactionId = trackId; // Ensure transactionId is updated if not set during creation
+      // Ensure transactionId, paymentNetwork, paymentCurrency are updated if not set during generation
+      productOrder.transactionId = trackId;
+      productOrder.paymentNetwork = network;
+      productOrder.paymentCurrency = to_currency;
       
       // Set the downloadLink to our internal download endpoint
       productOrder.downloadLink = `/api/payment/download/${orderId}`;
       
       await productOrder.save();
       console.log(`Product Order ${orderId} has been paid and download link set.`);
-    } else if (status === 'Failed' || status === 'Canceled') { // Handle other statuses
+    } else if (status === 'Failed' || status === 'Canceled') {
       productOrder.status = 'failed';
       productOrder.adminNotes = `Payment failed/canceled via OxaPay callback. Status: ${status}`;
       await productOrder.save();
@@ -167,12 +174,8 @@ router.get('/order-status/:orderId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    // Only return success if the order is paid
-    if (productOrder.status === 'paid') {
-      res.json({ success: true, order: productOrder });
-    } else {
-      res.status(400).json({ success: false, message: `Order status is ${productOrder.status}. Payment not confirmed.` });
-    }
+    // Return full order details including static address info
+    res.json({ success: true, order: productOrder });
   } catch (error) {
     console.error('Error fetching order status:', error);
     res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -190,10 +193,6 @@ router.get('/download/:orderId', async (req, res) => {
     if (!productOrder) {
       return res.status(403).json({ message: 'Payment not verified or order not found' });
     }
-
-    // If a downloadLink is stored in the order, use that directly.
-    // If it's our internal /api/payment/download/:orderId, we need to generate the S3 URL here.
-    // Since we're setting it to our internal endpoint in the callback, we proceed to generate the S3 URL.
 
     const firstProduct = productOrder.products[0];
     if (!firstProduct) {

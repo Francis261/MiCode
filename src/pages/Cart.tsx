@@ -5,26 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShoppingCart, CreditCard, ArrowLeft, MinusCircle, PlusCircle, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 
 const Cart = () => {
   const { cartItems, removeItemFromCart, addItemToCart, clearCart, cartTotal } = useCart();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Keep for potential future use or other loading states
   const [formData, setFormData] = useState({
     name: "",
     email: "",
   });
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePayment = async (e: React.FormEvent) => {
+  const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (cartItems.length === 0) {
@@ -44,44 +43,17 @@ const Cart = () => {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // Prepare product details for the backend
-      const productsForOrder = cartItems.map(item => ({
-        id: item.id, // Use the static product ID
-        title: item.title,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image,
-        category: item.category,
-      }));
-
-      const response = await fetch(`${API_URL}/api/payment/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          amount: cartTotal,
-          products: productsForOrder, // Send the array of products
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.paymentUrl) {
-        // Redirect to OxaPay payment page
-        window.location.href = data.paymentUrl;
-        clearCart(); // Clear cart after successful payment initiation
-      } else {
-        toast.error(data.message || "Failed to create payment");
-      }
-    } catch (error) {
-      toast.error("Unable to connect to payment server");
-    } finally {
-      setIsLoading(false);
-    }
+    // Navigate to the new PaymentPage, passing cart details as state
+    navigate("/payment", {
+      state: {
+        orderId: `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`, // Generate a temporary order ID here
+        clientName: formData.name,
+        clientEmail: formData.email,
+        totalAmount: cartTotal,
+        products: cartItems,
+      },
+    });
+    // Note: The cart is cleared on successful payment confirmation on the PaymentSuccess page, not here.
   };
 
   return (
@@ -162,11 +134,11 @@ const Cart = () => {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
-                    Checkout Details
+                    Your Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handlePayment} className="space-y-4">
+                  <form onSubmit={handleProceedToPayment} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
                       <Input
@@ -197,34 +169,9 @@ const Cart = () => {
                     <Button
                       type="submit"
                       className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                      disabled={isLoading || cartItems.length === 0}
+                      disabled={cartItems.length === 0}
                     >
-                      {isLoading ? (
-                        <span className="flex items-center gap-2">
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          Processing...
-                        </span>
-                      ) : (
-                        "Pay Now"
-                      )}
+                      Proceed to Payment
                     </Button>
 
                     <p className="text-xs text-center text-muted-foreground">
