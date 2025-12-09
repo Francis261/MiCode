@@ -61,6 +61,9 @@ const productOrderSchema = new mongoose.Schema({
   paymentCurrency: {
     type: String,
   },
+  cryptoAmount: { // New field to store the calculated crypto amount
+    type: Number,
+  },
   qrCodeUrl: { // To store the QR code image URL if OxaPay provides one, or if we generate and store it
     type: String,
   },

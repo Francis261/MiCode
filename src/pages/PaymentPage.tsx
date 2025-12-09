@@ -9,11 +9,10 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-// import * as QRCodeModule from "qrcode.react"; // Temporarily commented out
+import { QRCode } from "qrcode.react"; // Re-enabled QRCode import
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
-
-// const QRCode = QRCodeModule.default; // Temporarily commented out
+import { useQuery } from "@tanstack/react-query"; // Import useQuery
 
 interface CoinOption {
   name: string;
@@ -26,9 +25,9 @@ const coinOptions: CoinOption[] = [
   { name: "USDT TRC20", currency: "USDT", network: "TRON", icon: "/assets/usdt_icon.png" },
   { name: "Bitcoin", currency: "BTC", network: "BITCOIN", icon: "/assets/bitcoin_icon.png" },
   { name: "BNB BEP20", currency: "BNB", network: "BSC", icon: "/assets/bnb_icon.png" },
-  { name: "Toncoin", currency: "TONCOIN", network: "TON", icon: "/assets/toncoin-icon.png" }, // Changed currency from TON to TONCOIN
+  { name: "Toncoin", currency: "TONCOIN", network: "TON", icon: "/assets/toncoin-icon.png" },
   { name: "Dogecoin", currency: "DOGE", network: "DOGE", icon: "/assets/dogecoin-icon.png" },
-  { name: "Tron TRC20", currency: "TRON", network: "TRON", icon: "/assets/tron_icon.png" }, // Changed currency from TRX to TRON
+  { name: "Tron TRC20", currency: "TRON", network: "TRON", icon: "/assets/tron_icon.png" },
 ];
 
 export default function PaymentPage() {
@@ -38,10 +37,20 @@ export default function PaymentPage() {
 
   const [selectedCoin, setSelectedCoin] = useState<CoinOption | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [cryptoAmount, setCryptoAmount] = useState<number | null>(null); // New state for crypto amount
   const [isGeneratingAddress, setIsGeneratingAddress] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch crypto prices using React Query
+  const { data: cryptoPrices, isLoading: isLoadingPrices, error: pricesError } = useQuery<{ [key: string]: number }, Error>({
+    queryKey: ["cryptoPrices"],
+    queryFn: () => fetcher<{ success: boolean; prices: { [key: string]: number } }>("/payment/prices").then(res => res.prices),
+    staleTime: 5 * 60 * 1000, // Prices are fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Keep prices in cache for 10 minutes
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  });
 
   useEffect(() => {
     if (!orderId || !clientEmail || !totalAmount || !products) {
@@ -53,6 +62,7 @@ export default function PaymentPage() {
   const handleCoinSelect = async (coin: CoinOption) => {
     setSelectedCoin(coin);
     setWalletAddress(null);
+    setCryptoAmount(null); // Reset crypto amount
     setError(null);
     setIsGeneratingAddress(true);
 
@@ -64,6 +74,7 @@ export default function PaymentPage() {
         network?: string;
         currency?: string;
         trackId?: string;
+        cryptoAmount?: number; // Expect cryptoAmount from backend
       }>("/payment/generate-static-address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,12 +82,13 @@ export default function PaymentPage() {
           orderId,
           clientEmail,
           network: coin.network,
-          to_currency: coin.currency,
+          currency: coin.currency, // Send intended currency to backend for calculation
         }),
       });
 
-      if (response.success && response.address) {
+      if (response.success && response.address && response.cryptoAmount !== undefined) {
         setWalletAddress(response.address);
+        setCryptoAmount(response.cryptoAmount); // Set calculated crypto amount
         toast.success(`Static address generated for ${coin.name}`);
       } else {
         setError(response.message || "Failed to generate wallet address.");
@@ -225,11 +237,13 @@ export default function PaymentPage() {
                         key={coin.currency + coin.network}
                         variant={selectedCoin?.currency === coin.currency && selectedCoin?.network === coin.network ? "default" : "outline"}
                         onClick={() => handleCoinSelect(coin)}
-                        disabled={isGeneratingAddress || isCheckingPayment}
+                        disabled={isGeneratingAddress || isCheckingPayment || isLoadingPrices}
                         className="flex flex-col h-auto py-4 px-2 items-center justify-center text-center"
                       >
                         <img src={coin.icon} alt={coin.name} className="w-8 h-8 mb-2" />
                         <span className="text-sm font-medium">{coin.name}</span>
+                        {isLoadingPrices && <Loader2 className="h-4 w-4 animate-spin mt-1" />}
+                        {pricesError && <span className="text-destructive text-xs mt-1">Error</span>}
                       </Button>
                     ))}
                   </div>
@@ -249,13 +263,10 @@ export default function PaymentPage() {
                           <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
                           Generating address...
                         </div>
-                      ) : walletAddress ? (
+                      ) : walletAddress && cryptoAmount !== null ? (
                         <div className="space-y-4">
                           <div className="flex justify-center p-4 bg-white rounded-md">
-                            {/* <QRCode value={walletAddress} size={180} level="H" /> */} {/* Temporarily commented out */}
-                            <div className="w-[180px] h-[180px] flex items-center justify-center bg-gray-200 rounded-md">
-                                <p className="text-sm text-gray-500">QR Code Placeholder</p>
-                            </div>
+                            <QRCode value={walletAddress} size={180} level="H" />
                           </div>
                           <div>
                             <Label htmlFor="wallet-address">Wallet Address</Label>
@@ -276,7 +287,7 @@ export default function PaymentPage() {
                             <span>
                               **IMPORTANT:** Only send **{selectedCoin.currency}** on the **{selectedCoin.network}** network.
                               Sending any other coin or using a different network will result in loss of funds.
-                              Ensure you send the exact amount: **${totalAmount?.toFixed(2)}**.
+                              Ensure you send the exact amount: **{cryptoAmount.toFixed(8)} {selectedCoin.currency}**.
                             </span>
                           </div>
                         </div>

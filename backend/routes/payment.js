@@ -6,6 +6,7 @@ const ProductOrder = require('../models/ProductOrder');
 
 // OxaPay API endpoint for static address generation
 const OXAPAY_STATIC_ADDRESS_URL = 'https://api.oxapay.com/v1/payment/static-address';
+const OXAPAY_PRICES_URL = 'https://api.oxapay.com/v1/common/prices'; // New: OxaPay prices endpoint
 
 // Configure iDrive E2 S3 client
 const s3Client = new S3Client({
@@ -60,14 +61,45 @@ router.post('/create-product-order', async (req, res) => {
   }
 });
 
+// NEW: Endpoint to fetch current crypto prices from OxaPay
+router.get('/prices', async (req, res) => {
+  try {
+    const response = await fetch(OXAPAY_PRICES_URL, {
+      headers: {
+        'merchant_api_key': process.env.OXAPAY_MERCHANT_API_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OxaPay Prices API raw error response:', errorText);
+      throw new Error(`OxaPay API returned non-OK status: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.status === 200 && data.data) {
+      res.json({ success: true, prices: data.data });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: data.message || 'Failed to fetch prices from OxaPay',
+        errorDetails: data.error || data,
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching crypto prices:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 // New endpoint to generate a static wallet address
 router.post('/generate-static-address', async (req, res) => {
   try {
-    const { orderId, clientEmail, network, to_currency } = req.body; // Keep to_currency in req.body for now
+    const { orderId, clientEmail, network, currency } = req.body; // 'currency' is the intended crypto currency (e.g., USDT, BTC)
 
-    if (!orderId || !clientEmail || !network) { // Removed to_currency from required fields for the API call
-      return res.status(400).json({ message: 'Missing required fields: orderId, clientEmail, and network' });
+    if (!orderId || !clientEmail || !network || !currency) {
+      return res.status(400).json({ message: 'Missing required fields: orderId, clientEmail, network, and currency' });
     }
 
     let productOrder = await ProductOrder.findOne({ orderId });
@@ -76,8 +108,23 @@ router.post('/generate-static-address', async (req, res) => {
       return res.status(404).json({ message: 'Product order not found.' });
     }
 
+    // 1. Fetch current crypto prices
+    const pricesResponse = await fetch(`${process.env.BACKEND_URL || 'http://localhost:5000'}/api/payment/prices`);
+    const pricesData = await pricesResponse.json();
+
+    if (!pricesData.success || !pricesData.prices) {
+      throw new Error(pricesData.message || 'Failed to fetch crypto prices.');
+    }
+
+    const cryptoPriceInUSD = pricesData.prices[currency];
+    if (!cryptoPriceInUSD) {
+      return res.status(400).json({ success: false, message: `Price for ${currency} not available.` });
+    }
+
+    const requiredCryptoAmount = (productOrder.totalAmount / cryptoPriceInUSD).toFixed(8); // Calculate exact crypto amount
+
     // Check if a static address for this currency/network already exists for this order
-    if (productOrder.staticWalletAddress && productOrder.paymentNetwork === network && productOrder.paymentCurrency === to_currency) {
+    if (productOrder.staticWalletAddress && productOrder.paymentNetwork === network && productOrder.paymentCurrency === currency) {
       return res.json({
         success: true,
         message: 'Existing static address retrieved.',
@@ -85,7 +132,8 @@ router.post('/generate-static-address', async (req, res) => {
         network: productOrder.paymentNetwork,
         currency: productOrder.paymentCurrency,
         trackId: productOrder.transactionId,
-        qrCodeUrl: productOrder.qrCodeUrl, // Return existing QR code URL if available
+        qrCodeUrl: productOrder.qrCodeUrl,
+        cryptoAmount: productOrder.cryptoAmount, // Return existing crypto amount
       });
     }
 
@@ -93,7 +141,6 @@ router.post('/generate-static-address', async (req, res) => {
 
     const paymentData = {
       network: network,
-      // Removed to_currency from here to prevent 'invalid_to_currency' error
       auto_withdrawal: 0, // 0 indicates amount will be credited to OxaPay balance
       callback_url: callbackUrl,
       email: clientEmail,
@@ -123,8 +170,7 @@ router.post('/generate-static-address', async (req, res) => {
       productOrder.paymentNetwork = data.data.network;
       productOrder.paymentCurrency = data.data.to_currency; // OxaPay will return the actual currency it generated the address for
       productOrder.transactionId = data.data.track_id; // OxaPay's track_id for static address
-      // OxaPay doesn't return a QR code URL directly, frontend will generate it.
-      // productOrder.qrCodeUrl = data.data.qr_code_url; // If OxaPay ever adds this
+      productOrder.cryptoAmount = parseFloat(requiredCryptoAmount); // Store the calculated crypto amount
 
       await productOrder.save();
 
@@ -135,7 +181,7 @@ router.post('/generate-static-address', async (req, res) => {
         network: data.data.network,
         currency: data.data.to_currency, // Use the currency returned by OxaPay
         trackId: data.data.track_id,
-        // qrCodeUrl: data.data.qr_code_url, // If OxaPay ever adds this
+        cryptoAmount: productOrder.cryptoAmount, // Return the calculated crypto amount
       });
     } else {
       productOrder.adminNotes = `OxaPay static address generation failed: ${data.message || JSON.stringify(data.error || data)}`;
@@ -149,7 +195,7 @@ router.post('/generate-static-address', async (req, res) => {
     }
   } catch (error) {
     console.error('Generate static address error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
