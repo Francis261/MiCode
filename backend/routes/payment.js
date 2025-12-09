@@ -18,6 +18,49 @@ const s3Client = new S3Client({
   forcePathStyle: true, // Required for some S3-compatible storage providers
 });
 
+// NEW: Endpoint to create a ProductOrder in the database
+router.post('/create-product-order', async (req, res) => {
+  try {
+    const { clientName, clientEmail, totalAmount, products } = req.body;
+
+    if (!clientName || !clientEmail || !totalAmount || !products || products.length === 0) {
+      return res.status(400).json({ message: 'Missing required fields: clientName, clientEmail, totalAmount, and products' });
+    }
+
+    const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    const newProductOrder = new ProductOrder({
+      orderId,
+      clientName,
+      clientEmail,
+      totalAmount,
+      products: products.map(p => ({
+        productId: p.id,
+        title: p.title,
+        price: p.price,
+        quantity: p.quantity,
+        image: p.image,
+        category: p.category,
+      })),
+      status: 'pending',
+      paymentMethod: 'OxaPay', // Default payment method
+    });
+    await newProductOrder.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Product order created successfully.',
+      orderId: newProductOrder.orderId,
+      _id: newProductOrder._id, // Return MongoDB _id as well
+    });
+
+  } catch (error) {
+    console.error('Error creating product order:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 // New endpoint to generate a static wallet address
 router.post('/generate-static-address', async (req, res) => {
   try {

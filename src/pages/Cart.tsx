@@ -4,26 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, CreditCard, ArrowLeft, MinusCircle, PlusCircle, Trash2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { ShoppingCart, CreditCard, ArrowLeft, MinusCircle, PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
+import { fetcher } from "@/lib/api"; // Import fetcher
 
 const Cart = () => {
   const { cartItems, removeItemFromCart, addItemToCart, clearCart, cartTotal } = useCart();
-  const [isLoading, setIsLoading] = useState(false); // Keep for potential future use or other loading states
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false); // New loading state for order creation
   const [formData, setFormData] = useState({
     name: "",
     email: "",
   });
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleProceedToPayment = (e: React.FormEvent) => {
+  const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (cartItems.length === 0) {
@@ -43,17 +44,51 @@ const Cart = () => {
       return;
     }
 
-    // Navigate to the new PaymentPage, passing cart details as state
-    navigate("/payment", {
-      state: {
-        orderId: `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`, // Generate a temporary order ID here
-        clientName: formData.name,
-        clientEmail: formData.email,
-        totalAmount: cartTotal,
-        products: cartItems,
-      },
-    });
-    // Note: The cart is cleared on successful payment confirmation on the PaymentSuccess page, not here.
+    setIsProcessingOrder(true); // Start loading
+
+    try {
+      // 1. Create the ProductOrder in the backend
+      const orderCreationResponse = await fetcher<{ success: boolean; message?: string; orderId: string }>(
+        "/payment/create-product-order",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientName: formData.name,
+            clientEmail: formData.email,
+            totalAmount: cartTotal,
+            products: cartItems.map(item => ({
+              id: item.id,
+              title: item.title,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image,
+              category: item.category,
+            })),
+          }),
+        }
+      );
+
+      if (orderCreationResponse.success && orderCreationResponse.orderId) {
+        // 2. Navigate to the PaymentPage with the backend-generated orderId
+        navigate("/payment", {
+          state: {
+            orderId: orderCreationResponse.orderId,
+            clientName: formData.name,
+            clientEmail: formData.email,
+            totalAmount: cartTotal,
+            products: cartItems,
+          },
+        });
+      } else {
+        throw new Error(orderCreationResponse.message || "Failed to create order.");
+      }
+    } catch (error) {
+      console.error("Error during order creation:", error);
+      toast.error(error instanceof Error ? error.message : "An unexpected error occurred during order creation.");
+    } finally {
+      setIsProcessingOrder(false); // End loading
+    }
   };
 
   return (
@@ -169,9 +204,16 @@ const Cart = () => {
                     <Button
                       type="submit"
                       className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                      disabled={cartItems.length === 0}
+                      disabled={cartItems.length === 0 || isProcessingOrder}
                     >
-                      Proceed to Payment
+                      {isProcessingOrder ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                          Processing Order...
+                        </>
+                      ) : (
+                        "Proceed to Payment"
+                      )}
                     </Button>
 
                     <p className="text-xs text-center text-muted-foreground">
