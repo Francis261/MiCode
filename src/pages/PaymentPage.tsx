@@ -9,11 +9,11 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import * as QRCodeModule from "qrcode.react"; // Changed to namespace import
+// import * as QRCodeModule from "qrcode.react"; // Temporarily commented out
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
 
-const QRCode = QRCodeModule.default; // Access the default export from the namespace
+// const QRCode = QRCodeModule.default; // Temporarily commented out
 
 interface CoinOption {
   name: string;
@@ -252,7 +252,10 @@ export default function PaymentPage() {
                       ) : walletAddress ? (
                         <div className="space-y-4">
                           <div className="flex justify-center p-4 bg-white rounded-md">
-                            <QRCode value={walletAddress} size={180} level="H" />
+                            {/* <QRCode value={walletAddress} size={180} level="H" /> */} {/* Temporarily commented out */}
+                            <div className="w-[180px] h-[180px] flex items-center justify-center bg-gray-200 rounded-md">
+                                <p className="text-sm text-gray-500">QR Code Placeholder</p>
+                            </div>
                           </div>
                           <div>
                             <Label htmlFor="wallet-address">Wallet Address</Label>
