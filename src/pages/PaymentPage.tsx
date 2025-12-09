@@ -9,12 +9,10 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import * as QRCodeModule from "qrcode.react"; // Import as namespace
+import QRCode from "qrcode.react";
 import { fetcher } from "@/lib/api";
-import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
-import { useQuery } from "@tanstack/react-query"; // Import useQuery
-
-const QRCode = (QRCodeModule as any).default || (QRCodeModule as any).QRCode; // Access default or named export
+import { ProductOrder } from "@/types/product-order";
+import { useQuery } from "@tanstack/react-query";
 
 interface CoinOption {
   name: string;
@@ -28,21 +26,35 @@ const coinOptions: CoinOption[] = [
   { name: "Bitcoin", currency: "BTC", network: "BITCOIN", icon: "/assets/bitcoin_icon.png" },
   { name: "BNB BEP20", currency: "BNB", network: "BSC", icon: "/assets/bnb_icon.png" },
   { name: "Dogecoin", currency: "DOGE", network: "DOGE", icon: "/assets/dogecoin-icon.png" },
-  { name: "Tron TRC20", currency: "TRX", network: "TRON", icon: "/assets/tron_icon.png" }, // Changed currency to TRX
+  { name: "Tron TRC20", currency: "TRX", network: "TRON", icon: "/assets/tron_icon.png" },
 ];
 
 export default function PaymentPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { orderId, clientName, clientEmail, totalAmount, products } = location.state || {};
+
+  // Use useState to hold the values from location.state for stability
+  const [currentOrderId, setCurrentOrderId] = useState<string | undefined>(location.state?.orderId);
+  const [currentClientName, setCurrentClientName] = useState<string | undefined>(location.state?.clientName);
+  const [currentClientEmail, setCurrentClientEmail] = useState<string | undefined>(location.state?.clientEmail);
+  const [currentTotalAmount, setCurrentTotalAmount] = useState<number | undefined>(location.state?.totalAmount);
+  const [currentProducts, setCurrentProducts] = useState<any[] | undefined>(location.state?.products);
 
   const [selectedCoin, setSelectedCoin] = useState<CoinOption | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [cryptoAmount, setCryptoAmount] = useState<number | null>(null); // New state for crypto amount
+  const [cryptoAmount, setCryptoAmount] = useState<number | null>(null);
   const [isGeneratingAddress, setIsGeneratingAddress] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Effect to handle missing payment details and redirect
+  useEffect(() => {
+    if (!currentOrderId || !currentClientEmail || !currentTotalAmount || !currentProducts) {
+      toast.error("Payment details missing. Please go through the cart again.");
+      navigate("/cart");
+    }
+  }, [currentOrderId, currentClientEmail, currentTotalAmount, currentProducts, navigate]);
 
   // Fetch crypto prices using React Query
   const { data: cryptoPrices, isLoading: isLoadingPrices, error: pricesError } = useQuery<{ [key: string]: number }, Error>({
@@ -51,21 +63,29 @@ export default function PaymentPage() {
     staleTime: 5 * 60 * 1000, // Prices are fresh for 5 minutes
     cacheTime: 10 * 60 * 1000, // Keep prices in cache for 10 minutes
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    // Only enable if we have the necessary order details
+    enabled: !!currentOrderId && !!currentClientEmail && !!currentTotalAmount && !!currentProducts,
   });
 
-  useEffect(() => {
-    if (!orderId || !clientEmail || !totalAmount || !products) {
-      toast.error("Payment details missing. Please go through the cart again.");
-      navigate("/cart");
-    }
-  }, [orderId, clientEmail, totalAmount, products, navigate]);
-
   const handleCoinSelect = async (coin: CoinOption) => {
+    // Ensure we have the order details before proceeding
+    if (!currentOrderId || !currentClientEmail) {
+      toast.error("Order details are missing. Please refresh the page or go back to cart.");
+      return;
+    }
+
     setSelectedCoin(coin);
     setWalletAddress(null);
-    setCryptoAmount(null); // Reset crypto amount
+    setCryptoAmount(null);
     setError(null);
     setIsGeneratingAddress(true);
+
+    console.log("Attempting to generate address with:", {
+      orderId: currentOrderId,
+      clientEmail: currentClientEmail,
+      network: coin.network,
+      currency: coin.currency,
+    });
 
     try {
       const response = await fetcher<{
@@ -75,21 +95,21 @@ export default function PaymentPage() {
         network?: string;
         currency?: string;
         trackId?: string;
-        cryptoAmount?: number; // Expect cryptoAmount from backend
+        cryptoAmount?: number;
       }>("/payment/generate-static-address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId,
-          clientEmail,
+          orderId: currentOrderId,
+          clientEmail: currentClientEmail,
           network: coin.network,
-          currency: coin.currency, // Send intended currency to backend for calculation
+          currency: coin.currency,
         }),
       });
 
       if (response.success && response.address && response.cryptoAmount !== undefined) {
         setWalletAddress(response.address);
-        setCryptoAmount(response.cryptoAmount); // Set calculated crypto amount
+        setCryptoAmount(response.cryptoAmount);
         toast.success(`Static address generated for ${coin.name}`);
       } else {
         setError(response.message || "Failed to generate wallet address.");
@@ -112,20 +132,20 @@ export default function PaymentPage() {
   };
 
   const handleCheckPayment = async () => {
-    if (!orderId) return;
+    if (!currentOrderId) return;
 
     setIsCheckingPayment(true);
     setError(null);
 
     try {
       const response = await fetcher<{ success: boolean; order?: ProductOrder }>(
-        `/payment/order-status/${orderId}`
+        `/payment/order-status/${currentOrderId}`
       );
 
       if (response.success && response.order?.status === "paid") {
         setPaymentConfirmed(true);
         toast.success("Payment confirmed! Redirecting to success page...");
-        navigate(`/payment-success?orderId=${orderId}`);
+        navigate(`/payment-success?orderId=${currentOrderId}`);
       } else {
         setError("Payment not yet confirmed. Please wait a moment and try again.");
         toast.warning("Payment not yet confirmed. Please wait a moment and try again.");
@@ -139,7 +159,7 @@ export default function PaymentPage() {
     }
   };
 
-  if (!orderId) {
+  if (!currentOrderId) {
     return (
       <Layout>
         <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12">
@@ -195,20 +215,20 @@ export default function PaymentPage() {
                 <CardContent className="space-y-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Order ID</p>
-                    <p className="font-mono text-foreground">{orderId}</p>
+                    <p className="font-mono text-foreground">{currentOrderId}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Client Name</p>
-                    <p className="font-medium">{clientName}</p>
+                    <p className="font-medium">{currentClientName}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Client Email</p>
-                    <p className="font-medium">{clientEmail}</p>
+                    <p className="font-medium">{currentClientEmail}</p>
                   </div>
                   <Separator />
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Items</p>
-                    {products?.map((product: any) => (
+                    {currentProducts?.map((product: any) => (
                       <div key={product.id} className="flex justify-between text-sm">
                         <span>{product.title} (x{product.quantity})</span>
                         <span>${(product.price * product.quantity).toFixed(2)}</span>
@@ -219,7 +239,7 @@ export default function PaymentPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold">Total Amount</span>
                     <span className="text-2xl font-bold text-primary">
-                      ${totalAmount?.toFixed(2)}
+                      ${currentTotalAmount?.toFixed(2)}
                     </span>
                   </div>
                 </CardContent>
