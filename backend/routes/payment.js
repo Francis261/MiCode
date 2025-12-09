@@ -64,10 +64,10 @@ router.post('/create-product-order', async (req, res) => {
 // New endpoint to generate a static wallet address
 router.post('/generate-static-address', async (req, res) => {
   try {
-    const { orderId, clientEmail, network, to_currency } = req.body;
+    const { orderId, clientEmail, network, to_currency } = req.body; // Keep to_currency in req.body for now
 
-    if (!orderId || !clientEmail || !network || !to_currency) {
-      return res.status(400).json({ message: 'Missing required fields: orderId, clientEmail, network, to_currency' });
+    if (!orderId || !clientEmail || !network) { // Removed to_currency from required fields for the API call
+      return res.status(400).json({ message: 'Missing required fields: orderId, clientEmail, and network' });
     }
 
     let productOrder = await ProductOrder.findOne({ orderId });
@@ -93,7 +93,7 @@ router.post('/generate-static-address', async (req, res) => {
 
     const paymentData = {
       network: network,
-      to_currency: to_currency,
+      // Removed to_currency from here to prevent 'invalid_to_currency' error
       auto_withdrawal: 0, // 0 indicates amount will be credited to OxaPay balance
       callback_url: callbackUrl,
       email: clientEmail,
@@ -121,7 +121,7 @@ router.post('/generate-static-address', async (req, res) => {
     if (data.status === 200 && data.data && data.data.address) {
       productOrder.staticWalletAddress = data.data.address;
       productOrder.paymentNetwork = data.data.network;
-      productOrder.paymentCurrency = data.data.to_currency;
+      productOrder.paymentCurrency = data.data.to_currency; // OxaPay will return the actual currency it generated the address for
       productOrder.transactionId = data.data.track_id; // OxaPay's track_id for static address
       // OxaPay doesn't return a QR code URL directly, frontend will generate it.
       // productOrder.qrCodeUrl = data.data.qr_code_url; // If OxaPay ever adds this
@@ -133,7 +133,7 @@ router.post('/generate-static-address', async (req, res) => {
         message: 'Static address generated successfully!',
         address: data.data.address,
         network: data.data.network,
-        currency: data.data.to_currency,
+        currency: data.data.to_currency, // Use the currency returned by OxaPay
         trackId: data.data.track_id,
         // qrCodeUrl: data.data.qr_code_url, // If OxaPay ever adds this
       });
