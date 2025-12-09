@@ -9,10 +9,10 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import QRCode from "qrcode.react";
+// Removed: import QRCode from "qrcode.react"; // No longer needed
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query"; // Still needed for order status check
 
 interface CoinOption {
   name: string;
@@ -22,11 +22,11 @@ interface CoinOption {
 }
 
 const coinOptions: CoinOption[] = [
-  { name: "USDT TRC20", currency: "USDT", network: "TRC20", icon: "/assets/usdt_icon.png" }, // Changed network to TRC20
+  { name: "USDT TRC20", currency: "USDT", network: "TRC20", icon: "/assets/usdt_icon.png" },
   { name: "Bitcoin", currency: "BTC", network: "BITCOIN", icon: "/assets/bitcoin_icon.png" },
-  { name: "BNB BEP20", currency: "BNB", network: "BEP20", icon: "/assets/bnb_icon.png" }, // Changed network to BEP20
+  { name: "BNB BEP20", currency: "BNB", network: "BEP20", icon: "/assets/bnb_icon.png" },
   { name: "Dogecoin", currency: "DOGE", network: "DOGE", icon: "/assets/dogecoin-icon.png" },
-  { name: "Tron TRC20", currency: "TRX", network: "TRC20", icon: "/assets/tron_icon.png" }, // Changed network to TRC20
+  { name: "Tron TRC20", currency: "TRX", network: "TRC20", icon: "/assets/tron_icon.png" },
 ];
 
 export default function PaymentPage() {
@@ -43,7 +43,7 @@ export default function PaymentPage() {
   const [selectedCoin, setSelectedCoin] = useState<CoinOption | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [cryptoAmount, setCryptoAmount] = useState<number | null>(null);
-  const [qrCodeImageUrl, setQrCodeImageUrl] = useState<string | null>(null); // New state for QR code image URL
+  const [qrCodeImageUrl, setQrCodeImageUrl] = useState<string | null>(null); // State for QR code image URL from backend
   const [isGeneratingAddress, setIsGeneratingAddress] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
@@ -57,8 +57,8 @@ export default function PaymentPage() {
     }
   }, [currentOrderId, currentClientEmail, currentTotalAmount, currentProducts, navigate]);
 
-  // No need to fetch crypto prices separately anymore
-  // const { data: cryptoPrices, isLoading: isLoadingPrices, error: pricesError } = useQuery(...)
+  // Removed: useQuery for cryptoPrices as it's no longer needed.
+  // The backend's generate-static-address endpoint now handles the crypto amount calculation.
 
   const handleCoinSelect = async (coin: CoinOption) => {
     // Ensure we have the order details before proceeding
@@ -105,7 +105,7 @@ export default function PaymentPage() {
       if (response.success && response.address && response.cryptoAmount !== undefined) {
         setWalletAddress(response.address);
         setCryptoAmount(response.cryptoAmount);
-        setQrCodeImageUrl(response.qrCodeUrl || null); // Set QR code image URL
+        setQrCodeImageUrl(response.qrCodeUrl || null); // Set QR code image URL from backend
         toast.success(`Static address generated for ${coin.name}`);
       } else {
         setError(response.message || "Failed to generate wallet address.");
@@ -259,7 +259,6 @@ export default function PaymentPage() {
                       >
                         <img src={coin.icon} alt={coin.name} className="w-8 h-8 mb-2" />
                         <span className="text-sm font-medium">{coin.name}</span>
-                        {/* Removed isLoadingPrices and pricesError display */}
                       </Button>
                     ))}
                   </div>
@@ -281,13 +280,9 @@ export default function PaymentPage() {
                         </div>
                       ) : walletAddress && cryptoAmount !== null ? (
                         <div className="space-y-4">
-                          {qrCodeImageUrl ? ( // Use qrCodeImageUrl if available
+                          {qrCodeImageUrl && ( // Only render img if qrCodeImageUrl is available
                             <div className="flex justify-center p-4 bg-white rounded-md">
                               <img src={qrCodeImageUrl} alt="QR Code" className="w-[180px] h-[180px]" />
-                            </div>
-                          ) : ( // Fallback to generating with qrcode.react if no URL
-                            <div className="flex justify-center p-4 bg-white rounded-md">
-                              <QRCode value={walletAddress} size={180} level="H" />
                             </div>
                           )}
                           <div>
