@@ -9,7 +9,7 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { QRCode } from "qrcode.react"; // Re-enabled QRCode import
+import QRCode from "qrcode.react"; // Corrected to default import
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
 import { useQuery } from "@tanstack/react-query"; // Import useQuery
@@ -285,9 +285,8 @@ export default function PaymentPage() {
                           <div className="flex items-center gap-2 text-sm text-yellow-500 bg-yellow-500/10 p-3 rounded-md">
                             <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                             <span>
-                              **IMPORTANT:** Only send **{selectedCoin.currency}** on the **{selectedCoin.network}** network.
+                              **IMPORTANT:** Only send **{cryptoAmount.toFixed(8)} {selectedCoin.currency}** on the **{selectedCoin.network}** network.
                               Sending any other coin or using a different network will result in loss of funds.
-                              Ensure you send the exact amount: **{cryptoAmount.toFixed(8)} {selectedCoin.currency}**.
                             </span>
                           </div>
                         </div>
