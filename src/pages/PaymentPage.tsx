@@ -9,12 +9,9 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import * as QRCodeModule from "qrcode.react"; // Changed import to namespace import
+import QRCode from "qrcode.react";
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
-
-// Access the QRCode component from the namespace import
-const QRCode = QRCodeModule.default || QRCodeModule;
 
 interface CoinOption {
   name: string;
@@ -27,9 +24,9 @@ const coinOptions: CoinOption[] = [
   { name: "USDT TRC20", currency: "USDT", network: "TRON", icon: "/assets/usdt_icon.png" },
   { name: "Bitcoin", currency: "BTC", network: "BITCOIN", icon: "/assets/bitcoin_icon.png" },
   { name: "BNB BEP20", currency: "BNB", network: "BSC", icon: "/assets/bnb_icon.png" },
-  { name: "Toncoin", currency: "TON", network: "TON", icon: "/assets/toncoin-icon.png" },
+  { name: "Toncoin", currency: "TONCOIN", network: "TON", icon: "/assets/toncoin-icon.png" }, // Changed currency from TON to TONCOIN
   { name: "Dogecoin", currency: "DOGE", network: "DOGE", icon: "/assets/dogecoin-icon.png" },
-  { name: "Tron TRC20", currency: "TRX", network: "TRON", icon: "/assets/tron_icon.png" },
+  { name: "Tron TRC20", currency: "TRON", network: "TRON", icon: "/assets/tron_icon.png" }, // Changed currency from TRX to TRON
 ];
 
 export default function PaymentPage() {
