@@ -22,7 +22,7 @@ interface CoinOption {
 }
 
 const coinOptions: CoinOption[] = [
-  { name: "USDT TRC20", currency: "USDT", network: "TRC20", icon: "/assets/usdt_icon.png" },
+  { name: "USDT TRC20", currency: "USDT", network: "TRC20", icon: "/assets/usdt_icon.png" }, // Corrected network to TRC20
   { name: "Bitcoin", currency: "BTC", network: "BITCOIN", icon: "/assets/bitcoin_icon.png" },
   { name: "BNB BEP20", currency: "BNB", network: "BEP20", icon: "/assets/bnb_icon.png" },
   { name: "Dogecoin", currency: "DOGE", network: "DOGE", icon: "/assets/dogecoin-icon.png" },

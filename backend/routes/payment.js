@@ -161,9 +161,14 @@ router.post('/generate-static-address', async (req, res) => {
 // Payment callback (webhook from OxaPay) - Updated to handle static address payments
 router.post('/callback', async (req, res) => {
   try {
-    const { status, orderId, trackId, amount, to_currency, network } = req.body;
+    // Destructure with potential OxaPay callback field names (order_id, track_id)
+    const { status, order_id, track_id, amount, to_currency, network } = req.body;
 
-    console.log('Payment callback received:', { status, orderId, trackId, amount, to_currency, network });
+    console.log('Payment callback received:', { status, order_id, track_id, amount, to_currency, network });
+
+    // Use order_id from callback
+    const orderIdToFind = order_id; 
+    const trackIdFromCallback = track_id;
 
     // IMPORTANT: Verify the callback is from OxaPay using HMAC verification
     // This is crucial for security and preventing fake payment notifications.
@@ -172,16 +177,16 @@ router.post('/callback', async (req, res) => {
     // Example: const isValid = verifyOxaPaySignature(req.headers['x-oxapay-signature'], req.body);
     // if (!isValid) { return res.status(403).json({ message: 'Invalid signature' }); }
     
-    const productOrder = await ProductOrder.findOne({ orderId });
+    const productOrder = await ProductOrder.findOne({ orderId: orderIdToFind });
 
     if (!productOrder) {
-      console.error(`Product order with ID ${orderId} not found for callback.`);
+      console.error(`Product order with ID ${orderIdToFind} not found for callback.`);
       return res.status(404).json({ success: false, message: 'Product order not found' });
     }
 
     // For static addresses, the trackId from the callback should match the one stored
-    if (productOrder.transactionId !== trackId) {
-      console.warn(`Callback trackId mismatch for order ${orderId}. Expected ${productOrder.transactionId}, got ${trackId}`);
+    if (productOrder.transactionId !== trackIdFromCallback) { 
+      console.warn(`Callback trackId mismatch for order ${orderIdToFind}. Expected ${productOrder.transactionId}, got ${trackIdFromCallback}`);
       // This might indicate a different payment or a security issue. Handle accordingly.
       // For now, we'll proceed but log the warning.
     }
@@ -189,20 +194,20 @@ router.post('/callback', async (req, res) => {
     if (status === 'Paid') {
       productOrder.status = 'paid';
       // Ensure transactionId, paymentNetwork, paymentCurrency are updated if not set during generation
-      productOrder.transactionId = trackId;
+      productOrder.transactionId = trackIdFromCallback; // Update with track_id from callback
       productOrder.paymentNetwork = network;
       productOrder.paymentCurrency = to_currency;
       
       // Set the downloadLink to our internal download endpoint
-      productOrder.downloadLink = `/api/payment/download/${orderId}`;
+      productOrder.downloadLink = `/api/payment/download/${orderIdToFind}`;
       
       await productOrder.save();
-      console.log(`Product Order ${orderId} has been paid and download link set.`);
+      console.log(`Product Order ${orderIdToFind} has been paid and download link set.`);
     } else if (status === 'Failed' || status === 'Canceled') {
       productOrder.status = 'failed';
       productOrder.adminNotes = `Payment failed/canceled via OxaPay callback. Status: ${status}`;
       await productOrder.save();
-      console.log(`Product Order ${orderId} payment ${status}`);
+      console.log(`Product Order ${orderIdToFind} payment ${status}`);
     }
 
     res.json({ success: true });
