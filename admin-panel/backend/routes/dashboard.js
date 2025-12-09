@@ -1,7 +1,7 @@
 const express = require('express');
 const { authMiddleware, checkPermission } = require('../middleware/authMiddleware');
 const Product = require('../models/Product');
-const AppStats = require('./models/AppStats');
+const AppStats = require('../models/AppStats'); // Corrected import path for AppStats
 const ProductOrder = require('../models/ProductOrder'); // Import ProductOrder model
 const ChatUser = require('../../backend/models/ChatUser'); // Corrected import path for ChatUser model
 
