@@ -9,7 +9,7 @@ import { CheckCircle, Copy, Loader2, AlertTriangle, ArrowLeft } from "lucide-rea
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import QRCode from "qrcode.react";
+// import QRCode from "qrcode.react"; // Removed direct import
 import { fetcher } from "@/lib/api";
 import { ProductOrder } from "@/types/product-order";
 import { useQuery } from "@tanstack/react-query";
@@ -48,6 +48,29 @@ export default function PaymentPage() {
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // State for dynamically imported QRCode component
+  const [QRCodeComponent, setQRCodeComponent] = useState<React.ComponentType<any> | null>(null);
+
+  // Dynamic import for QRCode
+  useEffect(() => {
+    import("qrcode.react")
+      .then((module) => {
+        // Try to get the default export, or a named export if default is not present
+        // This handles cases where 'default' might be missing or named differently by bundler
+        const LoadedQRCode = (module as any).default || (module as any).QRCode;
+        if (LoadedQRCode) {
+          setQRCodeComponent(() => LoadedQRCode);
+        } else {
+          console.error("QRCode component not found in qrcode.react module.");
+          setError("Failed to load QR code component.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error dynamically importing qrcode.react:", err);
+        setError("Failed to load QR code component.");
+      });
+  }, []);
+
   // Effect to handle missing payment details and redirect
   useEffect(() => {
     if (!currentOrderId || !currentClientEmail || !currentTotalAmount || !currentProducts) {
@@ -76,7 +99,7 @@ export default function PaymentPage() {
 
     setSelectedCoin(coin);
     setWalletAddress(null);
-    setCryptoAmount(null);
+    setCryptoAmount(null); // Reset crypto amount
     setError(null);
     setIsGeneratingAddress(true);
 
@@ -284,10 +307,10 @@ export default function PaymentPage() {
                           <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
                           Generating address...
                         </div>
-                      ) : walletAddress && cryptoAmount !== null ? (
+                      ) : walletAddress && cryptoAmount !== null && QRCodeComponent ? ( // Check if QRCodeComponent is loaded
                         <div className="space-y-4">
                           <div className="flex justify-center p-4 bg-white rounded-md">
-                            <QRCode value={walletAddress} size={180} level="H" />
+                            <QRCodeComponent value={walletAddress} size={180} level="H" />
                           </div>
                           <div>
                             <Label htmlFor="wallet-address">Wallet Address</Label>
