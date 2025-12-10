@@ -1,26 +1,34 @@
 const mongoose = require('mongoose');
 
 const chatUserSchema = new mongoose.Schema({
-  uniqueId: {
+  odUserId: {
     type: String,
     required: true,
     unique: true,
   },
+  userId: {
+    type: String,
+    required: true,
+  },
   name: {
     type: String,
-    default: 'Anonymous',
+    required: true,
   },
   email: {
     type: String,
-    default: '',
+    required: true,
   },
-  isOnline: {
+  isActive: {
     type: Boolean,
     default: false,
   },
   lastSeen: {
     type: Date,
     default: Date.now,
+  },
+  unreadCount: {
+    type: Number,
+    default: 0,
   },
 }, {
   timestamps: true,

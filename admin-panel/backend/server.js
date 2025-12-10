@@ -18,7 +18,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also add urle
 
 // Models
 const AdminUser = require('./models/AdminUser');
-const ChatUser = require('../../backend/models/ChatUser'); // Corrected import path for ChatUser
+const ChatUser = require('./models/ChatUser'); // Updated import path for ChatUser
 
 // Seed Super Admin (Run once on startup)
 const seedSuperAdmin = async () => {
