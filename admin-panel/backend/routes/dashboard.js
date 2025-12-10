@@ -3,7 +3,7 @@ const { authMiddleware, checkPermission } = require('../middleware/authMiddlewar
 const Product = require('../models/Product');
 const AppStats = require('../models/AppStats'); // Corrected import path for AppStats
 const ProductOrder = require('../models/ProductOrder'); // Import ProductOrder model
-const ChatUser = require('../../../backend/models/ChatUser'); // Corrected import path for ChatUser model
+const ChatUser = require('../models/ChatUser');
 
 const router = express.Router();
 
