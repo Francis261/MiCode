@@ -3,6 +3,7 @@ const router = express.Router();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const ProductOrder = require('../models/ProductOrder');
+const ChatUser = require('../models/ChatUser'); // Import ChatUser model
 
 // OxaPay API endpoint for White Label payment generation
 const OXAPAY_WHITE_LABEL_URL = 'https://api.oxapay.com/v1/payment/white-label';
@@ -26,6 +27,32 @@ router.post('/create-product-order', async (req, res) => {
     if (!clientName || !clientEmail || !totalAmount || !products || products.length === 0) {
       return res.status(400).json({ message: 'Missing required fields: clientName, clientEmail, totalAmount, and products' });
     }
+
+    // --- Chat User Registration/Update Logic ---
+    let chatUser = await ChatUser.findOne({ email: clientEmail.toLowerCase() });
+
+    if (!chatUser) {
+      // If user doesn't exist, create a new chat user
+      const odUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      chatUser = new ChatUser({
+        odUserId: odUserId,
+        userId: odUserId, // Use odUserId for userId as well for consistency
+        name: clientName,
+        email: clientEmail.toLowerCase(),
+        isActive: false, // Not active until they open chat
+        unreadCount: 0,
+      });
+      await chatUser.save();
+      console.log(`New chat user registered: ${clientEmail}`);
+    } else {
+      // If user exists, ensure name is up-to-date (optional, but good for consistency)
+      if (chatUser.name !== clientName) {
+        chatUser.name = clientName;
+        await chatUser.save();
+        console.log(`Chat user name updated for: ${clientEmail}`);
+      }
+    }
+    // --- End Chat User Logic ---
 
     const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 

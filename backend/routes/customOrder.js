@@ -3,6 +3,7 @@ const router = express.Router();
 
 // We'll use the admin panel's models since they share the same database
 const mongoose = require('mongoose');
+const ChatUser = require('../models/ChatUser'); // Import ChatUser model
 
 // Define schemas here to avoid circular dependencies
 const orderMessageSchema = new mongoose.Schema({
@@ -112,8 +113,38 @@ router.get('/project-types', async (req, res) => {
 // Public: Submit a custom order
 router.post('/submit', async (req, res) => {
   try {
+    const { clientName, clientEmail, ...rest } = req.body;
+
+    // --- Chat User Registration/Update Logic ---
+    let chatUser = await ChatUser.findOne({ email: clientEmail.toLowerCase() });
+
+    if (!chatUser) {
+      // If user doesn't exist, create a new chat user
+      const odUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      chatUser = new ChatUser({
+        odUserId: odUserId,
+        userId: odUserId, // Use odUserId for userId as well for consistency
+        name: clientName,
+        email: clientEmail.toLowerCase(),
+        isActive: false, // Not active until they open chat
+        unreadCount: 0,
+      });
+      await chatUser.save();
+      console.log(`New chat user registered: ${clientEmail}`);
+    } else {
+      // If user exists, ensure name is up-to-date (optional, but good for consistency)
+      if (chatUser.name !== clientName) {
+        chatUser.name = clientName;
+        await chatUser.save();
+        console.log(`Chat user name updated for: ${clientEmail}`);
+      }
+    }
+    // --- End Chat User Logic ---
+
     const order = new CustomOrder({
-      ...req.body,
+      clientName,
+      clientEmail,
+      ...rest,
       status: 'pending',
       viewedByAdmin: false
     });
