@@ -6,7 +6,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
-import { ProductOrder } from "@/types/product-order"; // Assuming ProductOrder type is available
+import { ProductOrder, ProductOrderResponse } from "@/types/product-order";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -15,7 +15,7 @@ const PaymentSuccess = () => {
   // Fetch order status from backend
   const { data: order, isLoading, error } = useQuery<ProductOrder, Error>({
     queryKey: ["productOrder", orderId],
-    queryFn: () => fetcher<ProductOrder>(`/payment/order-status/${orderId}`).then(res => res.order),
+    queryFn: () => fetcher<ProductOrderResponse>(`/payment/order-status/${orderId}`).then(res => res.order),
     enabled: !!orderId, // Only run query if orderId is available
     retry: 3, // Retry failed requests up to 3 times
     retryDelay: 1000, // 1 second delay between retries
