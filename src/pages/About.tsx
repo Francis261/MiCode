@@ -70,7 +70,7 @@ export default function About() {
             transition={{ delay: 0.1 }}
             className="text-xl text-muted-foreground max-w-2xl mx-auto"
           >
-            DevForge was founded with a simple belief: everyone deserves access
+            DevGorge was founded with a simple belief: everyone deserves access
             to premium digital tools and world-class development services.
           </motion.p>
         </div>
@@ -90,7 +90,7 @@ export default function About() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 2020, DevForge started as a small team of developers
+                  Founded in 2020, DevGorge started as a small team of developers
                   frustrated with the lack of quality digital products in the market.
                   We saw an opportunity to create something better.
                 </p>
@@ -169,7 +169,7 @@ export default function About() {
               Meet the Team
             </h2>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              The talented people behind DevForge.
+              The talented people behind DevGorge.
             </p>
           </div>
 

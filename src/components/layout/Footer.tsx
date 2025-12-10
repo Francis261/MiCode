@@ -31,7 +31,7 @@ const socialLinks = [
   { icon: Github, href: "https://github.com", label: "GitHub" },
   { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
   { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-  { icon: Mail, href: "mailto:hello@devforge.io", label: "Email" },
+  { icon: Mail, href: "mailto:hello@devgorge.io", label: "Email" },
 ];
 
 export function Footer() {
@@ -43,7 +43,7 @@ export function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
-              <span className="font-display text-xl font-bold">DevForge</span>
+              <span className="font-display text-xl font-bold">DevGorge</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
               Premium digital products and custom development services for modern businesses.
@@ -135,7 +135,7 @@ export function Footer() {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} DevForge. All rights reserved.
+            © {new Date().getFullYear()} DevGorge. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
             Built with passion for developers worldwide.

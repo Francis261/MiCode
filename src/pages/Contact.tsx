@@ -13,14 +13,14 @@ const contactMethods = [
   {
     icon: Mail,
     title: "Email",
-    value: "hello@devforge.io",
-    href: "mailto:hello@devforge.io",
+    value: "hello@devgorge.io",
+    href: "mailto:hello@devgorge.io",
   },
   {
     icon: MessageSquare,
     title: "Discord",
     value: "Join our community",
-    href: "https://discord.gg/devforge",
+    href: "https://discord.gg/devgorge",
   },
   {
     icon: Phone,

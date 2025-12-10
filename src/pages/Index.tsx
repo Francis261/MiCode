@@ -148,7 +148,7 @@ export default function Index() {
                   <feature.icon className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-lg mb-1">{feature.title}</h3>
+                  <h3 className="font-display text-lg font-bold mb-1">{feature.title}</h3>
                   <p className="text-muted-foreground text-sm">{feature.description}</p>
                 </div>
               </motion.div>
