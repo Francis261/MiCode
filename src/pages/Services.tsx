@@ -191,19 +191,25 @@ export default function Services() {
       {/* CTA */}
       <section className="py-20 border-t border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
-            Ready to Start Your Project?
-          </h2>
-          <p className="text-muted-foreground max-w-lg mx-auto mb-8">
-            Let's discuss your requirements and create something amazing together.
-          </p>
-          <Button asChild variant="hero" size="xl">
-            <Link to="/custom-order">
-              Request a Quote
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          </Button>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
+              Ready to Start Your Project?
+            </h2>
+            <p className="text-muted-foreground max-w-lg mx-auto mb-8">
+              Let's discuss your requirements and create something amazing together.
+            </p>
+            <Button asChild variant="hero" size="xl">
+              <Link to="/custom-order">
+                Request a Quote
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </Button>
+          </motion.div>
+        </div>
       </section>
     </Layout>
   );
