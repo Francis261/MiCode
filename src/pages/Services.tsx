@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/components/ServiceCard";
 import { ServiceCardSkeleton } from "@/components/ServiceCardSkeleton";
 import { useServices } from "@/hooks/useServices";
+import { Seo } from "@/components/Seo"; // Import Seo component
 
 const pricingPlans = [
   {
@@ -57,6 +58,12 @@ export default function Services() {
 
   return (
     <Layout>
+      <Seo
+        title="Our Services"
+        description="DevGorge provides expert web development, UI/UX design, backend development, AI integration, and cloud & DevOps services. Get a custom solution for your business."
+        keywords="web development services, UI/UX design, backend development, AI integration, cloud services, DevOps, custom software, DevGorge services"
+        canonicalUrl="https://devgorge.com/services"
+      />
       {/* Header */}
       <section className="py-20 text-center">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -196,7 +203,7 @@ export default function Services() {
               <ArrowRight className="h-5 w-5" />
             </Link>
           </Button>
-        </div>
+        </motion.div>
       </section>
     </Layout>
   );

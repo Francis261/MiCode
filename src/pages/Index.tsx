@@ -10,6 +10,7 @@ import { TestimonialCardSkeleton } from "@/components/TestimonialCardSkeleton"; 
 import heroBg from "@/assets/hero-bg.jpg";
 import { useProducts } from "@/hooks/useProducts";
 import { useTestimonials } from "@/hooks/useTestimonials";
+import { Seo } from "@/components/Seo"; // Import Seo component
 
 const stats = [
   { value: "500+", label: "Products Sold" },
@@ -45,6 +46,12 @@ export default function Index() {
 
   return (
     <Layout>
+      <Seo
+        title="Home"
+        description="DevGorge offers premium website templates, powerful APIs, and custom development services to launch your next project faster."
+        keywords="DevGorge, web templates, APIs, custom development, React, Next.js, digital products"
+        canonicalUrl="https://devgorge.com/"
+      />
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {/* Background */}

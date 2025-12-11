@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "@/lib/api";
 import * as LucideIcons from "lucide-react";
+import { Seo } from "@/components/Seo"; // Import Seo component
 
 interface Service {
   _id: string;
@@ -61,6 +62,12 @@ export default function ServiceDetail() {
 
   return (
     <Layout>
+      <Seo
+        title={service.title}
+        description={service.description}
+        keywords={`${service.title}, ${service.features.join(', ')}, DevGorge services`}
+        canonicalUrl={`https://devgorge.com/services/${service._id}`}
+      />
       {/* Header */}
       <section className="py-12 border-b border-border">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">

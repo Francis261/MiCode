@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useProducts } from "@/hooks/useProducts"; // Import useProducts hook
+import { Seo } from "@/components/Seo"; // Import Seo component
 
-// Filter data (moved from src/data/products.ts)
+// Filter data (moved from public store for consistency)
 const categories = [
   { value: "all", label: "All" },
   { value: "Template", label: "Templates" },
@@ -81,6 +82,12 @@ export default function Store() {
 
   return (
     <Layout>
+      <Seo
+        title="Digital Marketplace"
+        description="Browse our collection of premium website templates, APIs, developer tools, and digital products. Find React, Next.js, Node.js solutions."
+        keywords="digital products, web templates, APIs, developer tools, React templates, Next.js, Node.js, UI components"
+        canonicalUrl="https://devgorge.com/store"
+      />
       {/* Header */}
       <section className="py-12 border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -223,7 +230,6 @@ export default function Store() {
           {error && products && (
             <p className="text-destructive text-center py-2">Failed to refresh products. Showing cached data. Retrying...</p>
           )}
-          {/* Products Grid */}
           {showSkeletons ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (

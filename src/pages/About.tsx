@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Target, Heart, Zap, Users } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
+import { Seo } from "@/components/Seo"; // Import Seo component
 
 const values = [
   {
@@ -52,6 +53,12 @@ const team = [
 export default function About() {
   return (
     <Layout>
+      <Seo
+        title="About Us"
+        description="Learn about DevGorge's mission, story, values, and meet our team. We're dedicated to building the future of digital products and development services."
+        keywords="about DevGorge, our story, company values, DevGorge team, digital product company"
+        canonicalUrl="https://devgorge.com/about"
+      />
       {/* Hero */}
       <section className="py-20 text-center">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
