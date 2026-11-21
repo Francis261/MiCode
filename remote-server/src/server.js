@@ -1,5 +1,4 @@
 import { createServer } from "node:http";
-import { timingSafeEqual } from "node:crypto";
 import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -9,7 +8,6 @@ import { z } from "zod";
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
-const API_KEY = process.env.DEVFORGE_API_KEY || "";
 const ROOTS = (process.env.DEVFORGE_WORKSPACES || "")
   .split(path.delimiter).map(s => path.resolve(s.trim())).filter(Boolean);
 const COMMANDS = new Set((process.env.DEVFORGE_ALLOWED_COMMANDS || "git,npm,pnpm,yarn,node,python3")
@@ -19,21 +17,9 @@ const MAX_OUTPUT = 64 * 1024;
 const MAX_FILE = 2 * 1024 * 1024;
 const rate = new Map();
 
-if (!API_KEY || API_KEY.length < 32) {
-  console.error("Set DEVFORGE_API_KEY to a random secret of at least 32 characters.");
-  process.exit(1);
-}
 if (!ROOTS.length) {
   console.error("Set DEVFORGE_WORKSPACES to one or more absolute workspace directories.");
   process.exit(1);
-}
-
-function authorized(req) {
-  const header = req.headers.authorization || "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const a = Buffer.from(supplied);
-  const b = Buffer.from(API_KEY);
-  return a.length === b.length && timingSafeEqual(a, b);
 }
 function limited(req) {
   const key = req.socket.remoteAddress || "unknown";
@@ -193,7 +179,6 @@ function buildMcp() {
 const server = createServer(async (req, res) => {
   if (req.url === "/health" && req.method === "GET") return json(res, 200, { ok: true, service: "devforge-remote" });
   if (req.url !== "/mcp") return json(res, 404, { error: "Not found" });
-  if (!authorized(req)) return json(res, 401, { error: "Unauthorized" });
   if (limited(req)) return json(res, 429, { error: "Rate limit exceeded" });
   try {
     const mcp = buildMcp();
@@ -214,5 +199,5 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`DevForge remote MCP listening on http://${HOST}:${PORT}/mcp`);
-  console.log("Configured workspaces:", ROOTS.map(path.basename).join(", "));
+  console.log("Configured workspaces:", ROOTS.map(r => path.basename(r)).join(", "));
 });
