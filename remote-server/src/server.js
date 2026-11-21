@@ -1,9 +1,8 @@
 import { createServer } from "node:http";
-import { timingSafeEqual, randomBytes } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
