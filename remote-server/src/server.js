@@ -174,7 +174,9 @@ function buildMcp() {
     if (!COMMANDS.has(command) || command.includes("/") || command.includes("\\")) throw new Error("Program is not in DEVFORGE_ALLOWED_COMMANDS");
     const root = await workspaceRoot(workspace);
     const output = await new Promise((resolve, reject) => {
-      const child = spawn(command, args, { cwd: root, shell: false, env: { ...process.env, CI: "1", GIT_TERMINAL_PROMPT: "0" }, stdio: ["ignore", "pipe", "pipe"] });
+      const commandEnv = { PATH: process.env.PATH || "", HOME: process.env.HOME || root, TMPDIR: process.env.TMPDIR || "/tmp", TEMP: process.env.TEMP || "/tmp", CI: "1", GIT_TERMINAL_PROMPT: "0" };
+      if (process.env.SYSTEMROOT) commandEnv.SYSTEMROOT = process.env.SYSTEMROOT;
+      const child = spawn(command, args, { cwd: root, shell: false, env: commandEnv, stdio: ["ignore", "pipe", "pipe"] });
       let stdout = "", stderr = "", timedOut = false;
       const timer = setTimeout(() => { timedOut = true; child.kill("SIGKILL"); }, timeout_ms);
       child.stdout.on("data", b => { if (stdout.length < MAX_OUTPUT) stdout += b.toString(); });
