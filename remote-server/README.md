@@ -7,7 +7,7 @@ This is the HTTPS-capable companion to the local stdio MCP server. It exposes a 
 - `workspace_list`, `list_files`, `read_file`, `write_file`, `delete_file`, `search_files`, `run_command`.
 - Workspaces are explicitly mounted/configured in `DEVFORGE_WORKSPACES`; tools cannot select arbitrary host paths.
 - File paths are workspace-relative and checked against traversal and symlink escapes.
-- Commands use `spawn(..., { shell: false })`; only executable names in `DEVFORGE_ALLOWED_COMMANDS` are accepted. Arguments are still powerful: a trusted caller can run project scripts and code. Do not expose this endpoint to untrusted users.
+- Commands use `spawn(..., { shell: false })`; only executable names in `DEVFORGE_ALLOWED_COMMANDS` are accepted. Child processes receive a minimal environment, not the server's API key. Arguments are still powerful: a trusted caller can run project scripts and code. Do not expose this endpoint to untrusted users.
 
 ## Local run
 
@@ -33,6 +33,8 @@ cd remote-server
 cp .env.example .env
 # Edit .env and set a unique secret. Never commit .env.
 mkdir -p workspaces
+# The container runs as the unprivileged node user (UID 1000).
+sudo chown -R 1000:1000 workspaces
 docker compose up -d --build
 ```
 
