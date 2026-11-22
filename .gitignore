@@ -1,3 +1,22 @@
+# Ignore everything by default
+*
+
+# But track these MCP server related files
+!.gitignore
+!remote-server/
+!mcp-plugin/
+
+# Ignore node_modules, logs, etc. in tracked directories
+remote-server/node_modules/
+remote-server/logs/
+remote-server/.env
+mcp-plugin/devforge-plugin/
+
+# Environment files
+*.env
+*.env.local
+*.env.*.local
+
 # Logs
 logs
 *.log
@@ -6,11 +25,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +36,28 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Build outputs
+dist
+dist-ssr
+*.local
+build
+.next
+out
+
+# Package manager
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Test coverage
+coverage
+.nyc_output
+
+# TypeScript
+*.tsbuildinfo
