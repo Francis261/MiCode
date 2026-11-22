@@ -1,4 +1,4 @@
-# DevForge
+# MiCode
 
 Local-first coding-agent MCP plugin for local project work and VPS access over SSH.
 
@@ -11,8 +11,8 @@ Local-first coding-agent MCP plugin for local project work and VPS access over S
 ## Configure
 Edit `mcp.json` or configure the same environment variables in your MCP host:
 
-- `DEVFORGE_WORKSPACES`: allowed project roots, separated by `:` on macOS/Linux or `;` on Windows.
-- `DEVFORGE_DEFAULT_WORKSPACE`: optional default workspace.
+- `MICODE_WORKSPACES`: allowed project roots, separated by `:` on macOS/Linux or `;` on Windows.
+- `MICODE_DEFAULT_WORKSPACE`: optional default workspace.
 
 The example configuration defaults to `~/Projects`. Change it to your actual project directory before use.
 
@@ -33,7 +33,7 @@ This is a powerful developer tool. Use it only on machines and projects you own 
 ## Test locally
 
 ```bash
-DEVFORGE_WORKSPACES="$HOME/Projects" node server/index.js
+MICODE_WORKSPACES="$HOME/Projects" node server/index.js
 ```
 
 The process speaks newline-delimited JSON-RPC on stdin/stdout. Do not type shell commands into this process; connect through an MCP host.

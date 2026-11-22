@@ -10,7 +10,7 @@
 remote-server/node_modules/
 remote-server/logs/
 remote-server/.env
-mcp-plugin/devforge-plugin/
+
 
 # Environment files
 *.env

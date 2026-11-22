@@ -1,15 +1,15 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
-    "devforge-local": {
+    "micode-local": {
       "type": "stdio",
       "command": "node",
       "args": ["${PLUGIN_ROOT}/server/index.js"],
       "cwd": "${PLUGIN_ROOT}",
       "env": {
-        "DEVFORGE_WORKSPACES": "${HOME}/Projects",
-        "DEVFORGE_DEFAULT_WORKSPACE": "",
-        "DEVFORGE_SSH_CONFIG": "${HOME}/.ssh/config"
+        "MICODE_WORKSPACES": "${HOME}/Projects",
+        "MICODE_DEFAULT_WORKSPACE": "",
+        "MICODE_SSH_CONFIG": "${HOME}/.ssh/config"
       }
     }
   }

@@ -16,9 +16,9 @@ const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
-const ROOTS = (process.env.DEVFORGE_WORKSPACES || "")
+const ROOTS = (process.env.MICODE_WORKSPACES || "")
   .split(path.delimiter).map(s => path.resolve(s.trim())).filter(Boolean);
-const COMMANDS = new Set((process.env.DEVFORGE_ALLOWED_COMMANDS || "git,npm,pnpm,yarn,node,python3,bash,sh,zsh,python,pip,uv,go,cargo,make,cmake,ninja,clang,gcc,g++,rustc,jq,awk,sed,grep,find,rsync,tar,zip,unzip,curl,wget,ssh,scp,rsync,docker,kubectl,terraform,ansible,psql,mysql,redis-cli,mongo,sqlite3")
+const COMMANDS = new Set((process.env.MICODE_ALLOWED_COMMANDS || "git,npm,pnpm,yarn,node,python3,bash,sh,zsh,python,pip,uv,go,cargo,make,cmake,ninja,clang,gcc,g++,rustc,jq,awk,sed,grep,find,rsync,tar,zip,unzip,curl,wget,ssh,scp,rsync,docker,kubectl,terraform,ansible,psql,mysql,redis-cli,mongo,sqlite3")
   .split(",").map(s => s.trim()).filter(Boolean));
 const MAX_BODY = 4 * 1024 * 1024;
 const MAX_OUTPUT = 256 * 1024;
@@ -26,7 +26,7 @@ const MAX_FILE = 4 * 1024 * 1024;
 const rate = new Map();
 
 if (!ROOTS.length) {
-  console.error("Set DEVFORGE_WORKSPACES to one or more absolute workspace directories.");
+  console.error("Set MICODE_WORKSPACES to one or more absolute workspace directories.");
   process.exit(1);
 }
 function limited(req) {
@@ -76,7 +76,7 @@ async function safePath(root, relative = ".") {
 function textResult(value) { return { content: [{ type: "text", text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }] }; }
 
 function buildMcp() {
-  const mcp = new McpServer({ name: "devforge-remote", version: "2.0.0" });
+  const mcp = new McpServer({ name: "micode-remote", version: "2.0.0" });
 
   mcp.registerTool("workspace_list", {
     description: "List configured workspaces and their top-level entries.",
@@ -312,7 +312,7 @@ function buildMcp() {
     description: "Run an allowed command in a workspace. No shell - use explicit args. Supports long-running commands with timeout.",
     inputSchema: { workspace: z.string(), command: z.string().min(1).max(100), args: z.array(z.string().max(4000)).max(100).optional(), timeout_ms: z.number().int().min(1000).max(300000).optional(), env: z.record(z.string()).optional() }
   }, async ({ workspace, command, args = [], timeout_ms = 60000, env = {} }) => {
-    if (!COMMANDS.has(command) || command.includes("/") || command.includes("\\")) throw new Error(`Command '${command}' not in DEVFORGE_ALLOWED_COMMANDS`);
+    if (!COMMANDS.has(command) || command.includes("/") || command.includes("\\")) throw new Error(`Command '${command}' not in MICODE_ALLOWED_COMMANDS`);
     const root = await workspaceRoot(workspace);
     const output = await new Promise((resolve, reject) => {
       const commandEnv = { PATH: process.env.PATH || "", HOME: process.env.HOME || root, TMPDIR: process.env.TMPDIR || "/tmp", TEMP: process.env.TEMP || "/tmp", CI: "1", GIT_TERMINAL_PROMPT: "0", ...env };
@@ -427,7 +427,7 @@ function buildMcp() {
     }
   }, async ({ workspace, action, todos, id, updates }) => {
     const root = await workspaceRoot(workspace);
-    const todoFile = path.join(root, ".devforge-todos.json");
+    const todoFile = path.join(root, ".micode-todos.json");
     let current = [];
     try { current = JSON.parse(await fs.readFile(todoFile, "utf8")); } catch {}
     switch (action) {
@@ -935,7 +935,7 @@ function parseUnifiedDiff(diff) {
 }
 
 const server = createServer(async (req, res) => {
-  if (req.url === "/health" && req.method === "GET") return json(res, 200, { ok: true, service: "devforge-remote", version: "2.0.0" });
+  if (req.url === "/health" && req.method === "GET") return json(res, 200, { ok: true, service: "micode-remote", version: "2.0.0" });
   if (req.url !== "/mcp") return json(res, 404, { error: "Not found" });
   if (limited(req)) return json(res, 429, { error: "Rate limit exceeded" });
   try {
@@ -956,6 +956,6 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`DevForge remote MCP v2.0 listening on http://${HOST}:${PORT}/mcp`);
+  console.log(`MiCode remote MCP v2.0 listening on http://${HOST}:${PORT}/mcp`);
   console.log("Configured workspaces:", ROOTS.map(r => path.basename(r)).join(", "));
 });

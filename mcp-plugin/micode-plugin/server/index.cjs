@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// DevForge local MCP executor. Uses only Node.js built-ins and newline-delimited JSON-RPC.
+// MiCode local MCP executor. Uses only Node.js built-ins and newline-delimited JSON-RPC.
 // All file operations are confined to configured workspace roots. VPS operations use SSH/SCP.
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
@@ -10,8 +10,8 @@ const { spawn } = require('node:child_process');
 const readline = require('node:readline');
 
 const parseList = (v) => (v || path.join(os.homedir(), 'Projects')).split(path.delimiter).filter(Boolean).map(p => path.resolve(p));
-const ROOTS = parseList(process.env.DEVFORGE_WORKSPACES);
-const DEFAULT_ROOT = process.env.DEVFORGE_DEFAULT_WORKSPACE ? path.resolve(process.env.DEVFORGE_DEFAULT_WORKSPACE) : ROOTS[0];
+const ROOTS = parseList(process.env.MICODE_WORKSPACES);
+const DEFAULT_ROOT = process.env.MICODE_DEFAULT_WORKSPACE ? path.resolve(process.env.MICODE_DEFAULT_WORKSPACE) : ROOTS[0];
 const MAX_READ = 1024 * 1024;
 const MAX_OUTPUT = 100_000;
 const MAX_TIMEOUT = 120_000;
@@ -20,7 +20,7 @@ const BLOCKED = [/(^|[;&|\s])rm\s+-rf\s+\//i, /:\s*\(\)\s*\{\s*:\s*\|\s*:/, /mkf
 function err(message) { throw new Error(message); }
 function workspaceRoot(workspace) {
   const candidate = path.resolve(workspace || DEFAULT_ROOT || '');
-  if (!candidate || !ROOTS.some(root => candidate === root || candidate.startsWith(root + path.sep))) err('Workspace is outside configured DEVFORGE_WORKSPACES. Configure an allowed root first.');
+  if (!candidate || !ROOTS.some(root => candidate === root || candidate.startsWith(root + path.sep))) err('Workspace is outside configured MICODE_WORKSPACES. Configure an allowed root first.');
   return candidate;
 }
 function safePath(workspace, relativePath) {
@@ -106,7 +106,7 @@ async function call(name, a) {
   if (name === 'create_directory') { const {root,target}=safePath(a.workspace,a.path); await ensureNoSymlinkEscape(root,target); await fsp.mkdir(target,{recursive:true}); return textResult({created:a.path}); }
   if (name === 'move_path') { if(a.confirm!==true) err('Move/rename requires confirm=true after explicit user approval.'); const {root,target:src}=safePath(a.workspace,a.from), {target:dst}=safePath(root,a.to); await ensureNoSymlinkEscape(root,src); await ensureNoSymlinkEscape(root,dst); await fsp.mkdir(path.dirname(dst),{recursive:true}); await fsp.rename(src,dst); return textResult({moved:a.from,to:a.to}); }
   if (name === 'search_files' || name === 'search_content') { const root=getWorkspace(a), files=[]; await walk(root,root,files,{limit:10000}); const re=a.regex?new RegExp(a.query,a.case_sensitive?'':'i'):null; const matches=[]; for(const f of files){if(f.type!=='file')continue; if(name==='search_files'){const ok=re?re.test(f.path):f.path.toLowerCase().includes(a.query.toLowerCase()); if(ok)matches.push(f.path);} else {const {target}=safePath(root,f.path); if(f.size>512000)continue; let s;try{s=await fsp.readFile(target,'utf8');if(s.includes('\0'))continue;}catch{continue;} const lines=s.split(/\r?\n/); for(let i=0;i<lines.length;i++){let ok;try{ok=re?re.test(lines[i]):(a.case_sensitive?lines[i].includes(a.query):lines[i].toLowerCase().includes(a.query.toLowerCase()));}catch(e){throw new Error('Invalid regular expression: '+e.message);} if(ok){matches.push({path:f.path,line:i+1,text:lines[i].slice(0,500)});if(matches.length>=(a.limit||100))break;}}} if(matches.length>=(a.limit||100))break;} return textResult(matches); }
-  if (name === 'execute_command') { const root=getWorkspace(a), cmd=a.command; if(!/^[a-zA-Z0-9_./-]+$/.test(cmd)) err('Use a simple executable name/path and pass arguments separately; shell syntax is disabled.'); const args=a.args||[]; if(args.some(x=>typeof x!=='string'))err('All args must be strings'); const joined=[cmd,...args].join(' '); if(BLOCKED.some(r=>r.test(joined)))err('Potentially destructive command blocked by DevForge safety policy.'); return textResult(await runProcess(cmd,args,{cwd:root,timeout:a.timeout_ms||30000})); }
+  if (name === 'execute_command') { const root=getWorkspace(a), cmd=a.command; if(!/^[a-zA-Z0-9_./-]+$/.test(cmd)) err('Use a simple executable name/path and pass arguments separately; shell syntax is disabled.'); const args=a.args||[]; if(args.some(x=>typeof x!=='string'))err('All args must be strings'); const joined=[cmd,...args].join(' '); if(BLOCKED.some(r=>r.test(joined)))err('Potentially destructive command blocked by MiCode safety policy.'); return textResult(await runProcess(cmd,args,{cwd:root,timeout:a.timeout_ms||30000})); }
   if (name === 'git_status' || name === 'git_diff' || name === 'git_log') { const root=getWorkspace(a); let args=['status','--short','--branch']; if(name==='git_diff') args=a.staged?['diff','--cached']:['diff']; if(name==='git_diff'&&a.path)args.push('--',a.path); if(name==='git_log')args=['log','-n',String(Math.min(Math.max(a.limit||10,1),100)),'--oneline','--decorate']; return textResult(await runProcess('git',args,{cwd:root,timeout:30000})); }
   if (name === 'ssh_execute') { if(!path.isAbsolute(a.remote_path))err('remote_path must be absolute'); if(/[\n\r]/.test(a.command))err('Multiline remote commands are not accepted.'); if(BLOCKED.some(r=>r.test(a.command)))err('Potentially destructive remote command blocked.'); return textResult(await runProcess('ssh',sshArgs(a.host,a.command,a.remote_path),{timeout:a.timeout_ms||30000})); }
   if (name === 'ssh_list_files') { if(!path.isAbsolute(a.remote_path))err('remote_path must be absolute'); const n=Math.min(Math.max(a.limit||300,1),1000); const cmd=`find . -maxdepth 4 -mindepth 1 -printf '%y %p\\n' | head -n ${n}`; return textResult(await runProcess('ssh',sshArgs(a.host,cmd,a.remote_path),{timeout:30000})); }
@@ -124,7 +124,7 @@ rl.on('line', async line => {
   const id=msg.id;
   try {
     let result;
-    if(msg.method==='initialize') result={protocolVersion:msg.params?.protocolVersion||'2024-11-05',capabilities:{tools:{}},serverInfo:{name:'devforge',version:'0.1.0'}};
+    if(msg.method==='initialize') result={protocolVersion:msg.params?.protocolVersion||'2024-11-05',capabilities:{tools:{}},serverInfo:{name:'micode',version:'0.1.0'}};
     else if(msg.method==='ping') result={};
     else if(msg.method==='tools/list') result={tools};
     else if(msg.method==='tools/call') { const a=msg.params?.arguments||{}; try {result=await call(msg.params?.name,a);} catch(e){result={content:[{type:'text',text:e.message}],isError:true};} }

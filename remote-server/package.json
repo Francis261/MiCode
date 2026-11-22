@@ -1,0 +1,21 @@
+{
+  "name": "remote-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "chokidar": "^6.0.0",
+    "vscode-languageserver": "^11.0.1",
+    "vscode-languageserver-textdocument": "^1.0.16",
+    "vscode-uri": "^3.2.0",
+    "zod": "^4.6.7"
+  }
+}
