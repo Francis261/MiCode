@@ -632,6 +632,14 @@ function buildMcp() {
         return [];
       });
       
+      // Handle workDoneProgress requests from LSP server
+      connection.onRequest("window/workDoneProgress/create", (params) => {
+        return { token: params.token };
+      });
+      connection.onNotification("window/workDoneProgress/cancel", (params) => {
+        // Ignore cancel notifications
+      });
+      
       const initParams = {
         processId: process.pid,
         rootUri: URI.file(root).toString(),

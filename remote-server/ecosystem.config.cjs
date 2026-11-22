@@ -8,7 +8,7 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 8787,
         HOST: '0.0.0.0',
-        DEVFORGE_WORKSPACES: '/root/micode',
+        DEVFORGE_WORKSPACES: '/root/micode:/root/appflow',
         DEVFORGE_ALLOWED_COMMANDS: 'git,npm,pnpm,yarn,node,python3'
       },
       error_file: 'logs/pm2-error.log',
