@@ -2,10 +2,17 @@ import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import chokidar from "chokidar";
+import { createConnection, TextDocuments, ProposedFeatures, TextDocumentSyncKind, StreamMessageReader, StreamMessageWriter } from "vscode-languageserver/node";
+import { TextDocument } from "vscode-languageserver-textdocument";
+import { URI } from "vscode-uri";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
@@ -567,8 +574,299 @@ function buildMcp() {
     return textResult({ session_id, stopped: true });
   });
 
-  // LSP tools disabled for now - syntax issue with vscode-languageserver
-  // TODO: Re-enable after fixing syntax issue
+  // LSP (Language Server Protocol) tools - spawns actual language servers
+  const lspClients = new Map();
+  const BIN_DIR = path.join(__dirname, "..", "node_modules", ".bin");
+  const LSP_SERVERS = {
+    typescript: { command: path.join(BIN_DIR, "typescript-language-server"), args: ["--stdio"], languages: ["typescript", "javascript", "tsx", "jsx"] },
+    python: { command: path.join(BIN_DIR, "pyright-langserver"), args: ["--stdio"], languages: ["python"] },
+    go: { command: "gopls", args: ["serve"], languages: ["go"] },
+    rust: { command: "rust-analyzer", args: [], languages: ["rust"] },
+    bash: { command: path.join(BIN_DIR, "bash-language-server"), args: ["start"], languages: ["bash", "shell"] },
+    dockerfile: { command: "dockerfile-language-server-nodejs", args: ["--stdio"], languages: ["dockerfile"] },
+    yaml: { command: path.join(BIN_DIR, "yaml-language-server"), args: ["--stdio"], languages: ["yaml"] },
+    json: { command: "vscode-json-language-server", args: ["--stdio"], languages: ["json"] }
+  };
+
+  function getLanguageServerConfig(language) {
+    for (const [key, config] of Object.entries(LSP_SERVERS)) {
+      if (config.languages.includes(language)) return { key, ...config };
+    }
+    return { key: language, command: language + "-language-server", args: ["--stdio"], languages: [language] };
+  }
+
+  async function getLspClient(workspace, language = "typescript") {
+    const root = await workspaceRoot(workspace);
+    const config = getLanguageServerConfig(language);
+    const key = `${root}:${config.key}`;
+    
+    if (lspClients.has(key)) return lspClients.get(key);
+    
+    const docMap = new Map();
+    
+    const initPromise = new Promise((resolve, reject) => {
+      const serverProcess = spawn(config.command, config.args, {
+        cwd: root,
+        env: { ...process.env, NODE_OPTIONS: "--max-old-space-size=4096" },
+        stdio: ["pipe", "pipe", "pipe"]
+      });
+      
+      if (!serverProcess.stdin || !serverProcess.stdout) {
+        reject(new Error(`Failed to spawn ${config.command}`));
+        return;
+      }
+      
+      serverProcess.stderr.on("data", (d) => console.error(`[LSP ${config.key}]`, d.toString()));
+      serverProcess.on("error", (e) => console.error(`[LSP ${config.key} spawn error]`, e));
+      serverProcess.on("exit", (code) => console.error(`[LSP ${config.key} exited]`, code));
+      
+      // Use StreamMessageReader/Writer for proper bidirectional communication
+      const reader = new StreamMessageReader(serverProcess.stdout);
+      const writer = new StreamMessageWriter(serverProcess.stdin);
+      const connection = createConnection(reader, writer, ProposedFeatures.all);
+      
+      connection.listen();
+      
+      // Handle workspace/configuration requests from LSP server
+      connection.onRequest("workspace/configuration", (params) => {
+        return [];
+      });
+      
+      const initParams = {
+        processId: process.pid,
+        rootUri: URI.file(root).toString(),
+        capabilities: {
+          textDocument: {
+            synchronization: { dynamicRegistration: true, willSave: true, willSaveWaitUntil: true, didSave: true },
+            hover: { dynamicRegistration: true, contentFormat: ["markdown", "plaintext"] },
+            definition: { dynamicRegistration: true, linkSupport: true },
+            references: { dynamicRegistration: true },
+            documentSymbol: { dynamicRegistration: true, hierarchicalDocumentSymbolSupport: true },
+            workspaceSymbol: { dynamicRegistration: true },
+            rename: { dynamicRegistration: true, prepareSupport: true, prepareSupportDefaultBehavior: 1 },
+            completion: { dynamicRegistration: true, completionItem: { snippetSupport: true, commitCharactersSupport: true, documentationFormat: ["markdown", "plaintext"], deprecatedSupport: true, preselectSupport: true, tagSupport: { valueSet: [1] } } },
+            formatting: { dynamicRegistration: true },
+            rangeFormatting: { dynamicRegistration: true }
+          },
+          workspace: { applyEdit: true, workspaceEdit: { documentChanges: true }, didChangeConfiguration: { dynamicRegistration: true }, didChangeWatchedFiles: { dynamicRegistration: true }, symbol: { dynamicRegistration: true }, executeCommand: { dynamicRegistration: true }, configuration: true },
+          window: { workDoneProgress: true }
+        },
+        workspaceFolders: [{ uri: URI.file(root).toString(), name: path.basename(root) }],
+        initializationOptions: {}
+      };
+      
+      connection.sendRequest("initialize", initParams).then(() => {
+        connection.sendNotification("initialized", {});
+        resolve({ connection, docMap, process: serverProcess, root, language: config.key, initialized: true });
+      }).catch(err => {
+        reject(err);
+      });
+      
+      setTimeout(() => reject(new Error("LSP initialization timeout")), 30000);
+    });
+    
+    let client;
+    try {
+      client = await initPromise;
+    } catch (e) {
+      console.error(`LSP init failed for ${config.key}:`, e.message);
+      client = { connection: null, docMap: new Map(), root, language: config.key, initialized: false, error: e.message };
+    }
+    
+    client.docMap = new Map();
+    lspClients.set(key, client);
+    return client;
+  }
+
+  async function ensureDoc(client, target, language) {
+    const uri = URI.file(target).toString();
+    let doc = client.docMap.get(uri);
+    if (!doc) {
+      try {
+        const content = await fs.readFile(target, "utf8");
+        doc = TextDocument.create(uri, language, 0, content);
+      } catch {
+        doc = TextDocument.create(uri, language, 0, "");
+      }
+      client.docMap.set(uri, doc);
+      
+      // Send didOpen notification to LSP server
+      if (client.connection) {
+        try {
+          await client.connection.sendNotification("textDocument/didOpen", {
+            textDocument: {
+              uri,
+              languageId: language,
+              version: 0,
+              text: doc.getText()
+            }
+          });
+        } catch (e) {
+          console.error(`[LSP didOpen error]`, e.message);
+        }
+      }
+    }
+    return doc;
+  }
+
+  mcp.registerTool("lsp_initialize", {
+    description: "Initialize Language Server for a workspace. Supports TypeScript/JavaScript, Python, Go, Rust, Bash, Dockerfile, YAML, JSON.",
+    inputSchema: { workspace: z.string(), language: z.enum(["typescript", "javascript", "python", "go", "rust", "bash", "dockerfile", "yaml", "json"]).optional() }
+  }, async ({ workspace, language = "typescript" }) => {
+    const client = await getLspClient(workspace, language);
+    return textResult({ workspace, language: client.language, initialized: client.initialized, root: client.root, error: client.error });
+  });
+
+  mcp.registerTool("lsp_hover", {
+    description: "Get hover information (type, documentation) at a position in a file.",
+    inputSchema: { workspace: z.string(), path: z.string(), line: z.number().int().min(0), character: z.number().int().min(0), language: z.string().optional() }
+  }, async ({ workspace, path: rel, line, character, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = await client.connection.sendRequest("textDocument/hover", { textDocument: { uri }, position: { line, character } });
+    return textResult(result || { contents: [] });
+  });
+
+  mcp.registerTool("lsp_definition", {
+    description: "Go to definition of symbol at position.",
+    inputSchema: { workspace: z.string(), path: z.string(), line: z.number().int().min(0), character: z.number().int().min(0), language: z.string().optional() }
+  }, async ({ workspace, path: rel, line, character, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = await client.connection.sendRequest("textDocument/definition", { textDocument: { uri }, position: { line, character } });
+    return textResult(result || []);
+  });
+
+  mcp.registerTool("lsp_references", {
+    description: "Find all references to symbol at position.",
+    inputSchema: { workspace: z.string(), path: z.string(), line: z.number().int().min(0), character: z.number().int().min(0), include_declaration: z.boolean().optional(), language: z.string().optional() }
+  }, async ({ workspace, path: rel, line, character, include_declaration = true, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = await client.connection.sendRequest("textDocument/references", { textDocument: { uri }, position: { line, character }, context: { includeDeclaration: include_declaration } });
+    return textResult(result || []);
+  });
+
+  mcp.registerTool("lsp_document_symbols", {
+    description: "Get all symbols (classes, functions, variables) in a document.",
+    inputSchema: { workspace: z.string(), path: z.string(), language: z.string().optional() }
+  }, async ({ workspace, path: rel, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = await client.connection.sendRequest("textDocument/documentSymbol", { textDocument: { uri } });
+    return textResult(result || []);
+  });
+
+  mcp.registerTool("lsp_workspace_symbols", {
+    description: "Search for symbols across the entire workspace.",
+    inputSchema: { workspace: z.string(), query: z.string(), language: z.string().optional() }
+  }, async ({ workspace, query, language = "typescript" }) => {
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    const result = await client.connection.sendRequest("workspace/symbol", { query });
+    return textResult(result || []);
+  });
+
+  mcp.registerTool("lsp_rename", {
+    description: "Rename a symbol across the workspace.",
+    inputSchema: { workspace: z.string(), path: z.string(), line: z.number().int().min(0), character: z.number().int().min(0), new_name: z.string(), language: z.string().optional() }
+  }, async ({ workspace, path: rel, line, character, new_name, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = await client.connection.sendRequest("textDocument/rename", { textDocument: { uri }, position: { line, character }, newName: new_name });
+    if (result && result.changes) {
+      for (const [docUri, edits] of Object.entries(result.changes)) {
+        const filePath = URI.parse(docUri).fsPath;
+        const fileDoc = client.docMap.get(docUri);
+        if (fileDoc) {
+          let text = fileDoc.getText();
+          for (const edit of edits) {
+            const start = fileDoc.offsetAt(edit.range.start);
+            const end = fileDoc.offsetAt(edit.range.end);
+            text = text.slice(0, start) + edit.newText + text.slice(end);
+          }
+          await fs.writeFile(filePath, text, "utf8");
+          client.docMap.set(docUri, TextDocument.create(docUri, client.language, fileDoc.version + 1, text));
+        } else {
+          // Read file directly if not in cache
+          try {
+            let text = await fs.readFile(filePath, "utf8");
+            for (const edit of edits) {
+              const doc = TextDocument.create(docUri, client.language, 0, text);
+              const start = doc.offsetAt(edit.range.start);
+              const end = doc.offsetAt(edit.range.end);
+              text = text.slice(0, start) + edit.newText + text.slice(end);
+            }
+            await fs.writeFile(filePath, text, "utf8");
+          } catch (e) {
+            console.error(`[LSP rename apply error]`, e.message);
+          }
+        }
+      }
+    }
+    return textResult({ applied: !!result, changes: result?.changes || {} });
+  });
+
+  mcp.registerTool("lsp_completion", {
+    description: "Get code completions at a position.",
+    inputSchema: { workspace: z.string(), path: z.string(), line: z.number().int().min(0), character: z.number().int().min(0), trigger_character: z.string().optional(), language: z.string().optional() }
+  }, async ({ workspace, path: rel, line, character, trigger_character, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = await client.connection.sendRequest("textDocument/completion", { textDocument: { uri }, position: { line, character }, context: trigger_character ? { triggerKind: 2, triggerCharacter: trigger_character } : undefined });
+    return textResult(result || { isIncomplete: false, items: [] });
+  });
+
+  mcp.registerTool("lsp_format", {
+    description: "Format a document or range using the language server.",
+    inputSchema: { workspace: z.string(), path: z.string(), range: z.object({ start: z.object({ line: z.number(), character: z.number() }), end: z.object({ line: z.number(), character: z.number() }) }).optional(), language: z.string().optional() }
+  }, async ({ workspace, path: rel, range, language = "typescript" }) => {
+    const root = await workspaceRoot(workspace);
+    const target = await safePath(root, rel);
+    const client = await getLspClient(workspace, language);
+    if (!client.initialized) throw new Error(`LSP not initialized: ${client.error || "unknown"}`);
+    await ensureDoc(client, target, client.language);
+    const uri = URI.file(target).toString();
+    const result = range
+      ? await client.connection.sendRequest("textDocument/rangeFormatting", { textDocument: { uri }, range, options: { tabSize: 2, insertSpaces: true } })
+      : await client.connection.sendRequest("textDocument/formatting", { textDocument: { uri }, options: { tabSize: 2, insertSpaces: true } });
+    if (result && result.length > 0) {
+      const fileDoc = client.documents.get(uri);
+      let text = fileDoc?.getText() || await fs.readFile(target, "utf8");
+      for (const edit of result) {
+        const start = fileDoc ? fileDoc.offsetAt(edit.range.start) : 0;
+        const end = fileDoc ? fileDoc.offsetAt(edit.range.end) : text.length;
+        text = text.slice(0, start) + edit.newText + text.slice(end);
+      }
+      await fs.writeFile(target, text, "utf8");
+      if (fileDoc) client.documents.set(uri, TextDocument.create(uri, client.language, fileDoc.version + 1, text));
+    }
+    return textResult({ formatted: !!result, edits: result?.length || 0 });
+  });
 
   return mcp;
 }
