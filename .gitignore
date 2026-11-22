@@ -5,6 +5,9 @@ node_modules/
 
 # Expo
 .expo/
+.runtime/
+MiCode/agent-server/.env
+agent-server/.env
 dist/
 web-build/
 expo-env.d.ts

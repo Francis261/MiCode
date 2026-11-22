@@ -1,0 +1,13 @@
+const { spawn } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const logs = path.join(root, '.runtime');
+fs.mkdirSync(logs, { recursive: true });
+const out = fs.openSync(path.join(logs, 'ngrok.log'), 'a');
+const bin = path.join(root, 'node_modules/.bin/ngrok');
+const child = spawn(bin, ['http', '8081'], { cwd: root, detached: true, stdio: ['ignore', out, out], env: process.env });
+child.on('error', e => fs.appendFileSync(path.join(logs, 'ngrok.log'), '\n' + e.message + '\n'));
+child.unref();
+fs.writeFileSync(path.join(logs, 'ngrok.pid'), String(child.pid));
+console.log(JSON.stringify({ ngrokPid: child.pid, port: 8081, inspector: 'http://127.0.0.1:4040' }));

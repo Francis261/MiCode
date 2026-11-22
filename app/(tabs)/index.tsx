@@ -1,31 +1,24 @@
-import { StyleSheet } from 'react-native';
-
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
-
-export default function TabOneScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
-    </View>
-  );
+import { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { router } from 'expo-router';
+import { ArrowUp, Bell, ChevronRight, Globe2, Layers3, Sparkles, Zap, GitBranch, Smartphone, ShoppingBag } from 'lucide-react-native';
+import { Screen } from '@/components/Screen';
+import { Brand } from '@/components/Brand';
+import { SectionTitle } from '@/components/SectionTitle';
+import { colors } from '@/constants/theme';
+import { useWorkspace } from '@/lib/workspace';
+const suggestions=[{label:'SaaS dashboard',icon:Layers3},{label:'E-commerce',icon:ShoppingBag},{label:'Mobile app',icon:Smartphone},{label:'Landing page',icon:Globe2}];
+export default function HomeScreen(){
+ const [prompt,setPrompt]=useState('');
+ const { projects } = useWorkspace();
+ const start=()=>{router.push({pathname:'/project/new',params:{prompt}});};
+ return <Screen contentStyle={s.content}>
+  <View style={s.top}><Brand/><Pressable style={s.bell} onPress={()=>router.push('/activity')}><Bell size={19} color={colors.text}/><View style={s.dot}/></Pressable></View>
+  <View style={s.greeting}><Text style={s.eyebrow}>YOUR AI DEVELOPMENT STUDIO</Text><Text style={s.heading}>What are we{ '\n'}building today?</Text><Text style={s.subheading}>Describe an idea, create a workspace, and connect its GitHub repository.</Text></View>
+  <View style={s.promptCard}><View style={s.promptTop}><View style={s.sparkle}><Sparkles size={16} color={colors.primary}/></View><Text style={s.promptLabel}>START WITH A PROMPT</Text><View style={s.powered}><View style={s.liveDot}/><Text style={s.poweredText}>Local workspace</Text></View></View><TextInput value={prompt} onChangeText={setPrompt} multiline placeholder="Build a beautiful analytics dashboard with user authentication..." placeholderTextColor="#A4A7B4" style={s.input}/><View style={s.promptBottom}><Pressable style={s.attach} onPress={()=>router.push('/projects')}><GitBranch size={15} color={colors.muted}/><Text style={s.attachText}>Connect repository</Text></Pressable><Pressable disabled={!prompt.trim()} style={[s.send,!prompt.trim()&&s.sendDisabled]} onPress={start}><ArrowUp size={19} color="#fff"/></Pressable></View></View>
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.suggestions}>{suggestions.map(({label,icon:Icon})=><Pressable key={label} onPress={()=>setPrompt(`Build a ${label.toLowerCase()} with a polished, responsive interface.`)} style={s.suggestion}><Icon size={14} color={colors.primary}/><Text style={s.suggestionText}>{label}</Text></Pressable>)}</ScrollView>
+  <View style={s.section}><SectionTitle title="Recent projects" action="View all"/><View style={s.projectList}>{projects.slice(0,3).map((project,i)=>{const Icon=i===1?Smartphone:i===2?Globe2:ShoppingBag;return <Pressable key={project.id} style={s.project} onPress={()=>router.push({pathname:'/project/[id]',params:{id:project.id}})}><View style={[s.projectIcon,{backgroundColor:i===1?'#E5F5EF':i===2?'#EAF1FF':'#EDE9FF'}]}><Icon size={20} color={i===1?colors.green:i===2?colors.blue:colors.primary}/></View><View style={s.projectInfo}><Text style={s.projectName}>{project.name}</Text><Text style={s.projectDesc}>{project.repo||'Local project · Not connected'}</Text><View style={s.projectMeta}><View style={[s.statusDot,{backgroundColor:project.status==='Ready'?colors.green:colors.orange}]}/><Text style={s.status}>{project.status}</Text><Text style={s.metaSep}>·</Text><Text style={s.tag}>{project.visibility}</Text></View></View><ChevronRight size={18} color="#B5B7C2"/></Pressable>})}{projects.length===0?<Text style={{padding:18,fontSize:12,color:colors.muted}}>Your new projects will appear here.</Text>:null}</View></View>
+  <View style={s.bottomBanner}><View style={s.bannerIcon}><Zap size={18} color="#F4C66A" fill="#F4C66A"/></View><View style={{flex:1}}><Text style={s.bannerTitle}>Your code. Your infrastructure.</Text><Text style={s.bannerText}>Connect a secure agent runner when your infrastructure is ready.</Text></View><ChevronRight size={17} color="#C9C8D9"/></View>
+ </Screen>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});
+const s=StyleSheet.create({content:{paddingTop:10},top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:34},bell:{height:42,width:42,borderRadius:14,backgroundColor:'#fff',borderWidth:1,borderColor:colors.border,alignItems:'center',justifyContent:'center'},dot:{position:'absolute',right:10,top:9,width:7,height:7,borderRadius:4,backgroundColor:'#F07878',borderWidth:1,borderColor:'#fff'},greeting:{marginBottom:22},eyebrow:{fontSize:10,fontWeight:'800',letterSpacing:1.5,color:colors.primary,marginBottom:12},heading:{fontSize:34,lineHeight:39,fontWeight:'800',letterSpacing:-1.4,color:colors.text},subheading:{fontSize:14,color:colors.muted,marginTop:10,lineHeight:21},promptCard:{backgroundColor:'#fff',borderRadius:22,borderWidth:1,borderColor:'#E6E4F5',padding:16,shadowColor:'#28204F',shadowOpacity:.06,shadowRadius:18,shadowOffset:{width:0,height:7},elevation:3},promptTop:{flexDirection:'row',alignItems:'center',gap:8},sparkle:{width:28,height:28,borderRadius:9,backgroundColor:colors.primarySoft,alignItems:'center',justifyContent:'center'},promptLabel:{fontSize:10,fontWeight:'800',letterSpacing:1,color:colors.text,flex:1},powered:{flexDirection:'row',alignItems:'center',gap:5},liveDot:{width:6,height:6,borderRadius:3,backgroundColor:colors.green},poweredText:{fontSize:11,color:colors.green,fontWeight:'700'},input:{fontSize:15,color:colors.text,minHeight:105,textAlignVertical:'top',paddingTop:17,lineHeight:23},promptBottom:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:'#F0F0F5',paddingTop:12},attach:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:7},attachText:{fontSize:12,color:colors.muted,fontWeight:'600'},send:{width:40,height:40,borderRadius:13,backgroundColor:colors.primary,alignItems:'center',justifyContent:'center'},sendDisabled:{opacity:.55},suggestions:{gap:8,paddingTop:13,paddingBottom:8},suggestion:{flexDirection:'row',alignItems:'center',gap:7,backgroundColor:'#fff',borderWidth:1,borderColor:colors.border,borderRadius:20,paddingHorizontal:12,paddingVertical:9},suggestionText:{fontSize:12,fontWeight:'600',color:colors.text},section:{marginTop:28},projectList:{backgroundColor:'#fff',borderRadius:18,borderWidth:1,borderColor:colors.border,overflow:'hidden'},project:{flexDirection:'row',alignItems:'center',padding:14,gap:12,borderBottomWidth:1,borderBottomColor:'#F0F0F4'},projectIcon:{width:44,height:44,borderRadius:14,alignItems:'center',justifyContent:'center'},projectInfo:{flex:1,gap:4},projectName:{fontSize:14,fontWeight:'800',color:colors.text},projectDesc:{fontSize:11,color:colors.muted},projectMeta:{flexDirection:'row',alignItems:'center',gap:6,marginTop:2},statusDot:{width:6,height:6,borderRadius:3},status:{fontSize:10,fontWeight:'700',color:colors.muted},metaSep:{color:'#C5C6CE'},tag:{fontSize:10,color:colors.subtle},bottomBanner:{flexDirection:'row',alignItems:'center',gap:11,backgroundColor:colors.dark,borderRadius:18,padding:15,marginTop:18},bannerIcon:{width:36,height:36,borderRadius:12,backgroundColor:'#343247',alignItems:'center',justifyContent:'center'},bannerTitle:{fontSize:12,fontWeight:'800',color:'#fff'},bannerText:{fontSize:10,color:'#B4B4C7',marginTop:4,lineHeight:15}});

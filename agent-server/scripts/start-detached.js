@@ -1,0 +1,11 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+const root = process.cwd();
+const runtime = path.join(root, '.runtime');
+fs.mkdirSync(runtime, { recursive: true });
+const log = fs.openSync(path.join(runtime, 'agent-server.log'), 'a');
+const child = spawn(process.execPath, ['--env-file=.env', 'src/server.js'], { cwd: root, detached: true, stdio: ['ignore', log, log] });
+child.unref();
+fs.writeFileSync(path.join(runtime, 'agent-server.pid'), String(child.pid));
+console.log('MiCode agent server launched; PID ' + child.pid + '. Logs: .runtime/agent-server.log');

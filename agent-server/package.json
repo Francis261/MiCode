@@ -1,0 +1,11 @@
+{
+  "name": "micode-agent-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "setup": "node scripts/setup.js", "start": "node --env-file=.env src/server.js",
+    "start:detached": "node scripts/start-detached.js",
+    "tunnel:detached": "node scripts/tunnel-detached.js", "check": "node --check src/server.js",
+    "smoke": "node scripts/smoke-test.js" },
+  "engines": { "node": ">=20" }
+}

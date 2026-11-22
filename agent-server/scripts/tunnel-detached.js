@@ -1,0 +1,11 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+const root = process.cwd();
+const runtime = path.join(root, '.runtime');
+fs.mkdirSync(runtime, { recursive: true });
+const log = fs.openSync(path.join(runtime, 'agent-tunnel.log'), 'a');
+const child = spawn('cloudflared', ['tunnel', '--url', 'http://127.0.0.1:8788', '--no-autoupdate'], { detached: true, stdio: ['ignore', log, log] });
+child.unref();
+fs.writeFileSync(path.join(runtime, 'agent-tunnel.pid'), String(child.pid));
+console.log('Cloudflare quick tunnel launched; PID ' + child.pid + '. Waiting for the public URL in .runtime/agent-tunnel.log');

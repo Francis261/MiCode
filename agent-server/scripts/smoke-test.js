@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+const env = fs.readFileSync(new URL('../.env', import.meta.url), 'utf8');
+const token = env.match(/^MICODE_SERVER_TOKEN=(.*)$/m)?.[1];
+if (!token) throw new Error('MICODE_SERVER_TOKEN missing');
+const base = 'http://127.0.0.1:' + (env.match(/^PORT=(\d+)/m)?.[1] || '8788');
+const health = await fetch(base + '/health');
+if (!health.ok) throw new Error('Health check failed: ' + health.status);
+const denied = await fetch(base + '/v1/status');
+if (denied.status !== 401) throw new Error('Unauthenticated status endpoint was not rejected: ' + denied.status);
+const status = await fetch(base + '/v1/status', { headers: { authorization: 'Bearer ' + token } });
+if (!status.ok) throw new Error('Authenticated status endpoint failed: ' + status.status);
+const data = await status.json();
+console.log(JSON.stringify({ health: health.status, unauthenticated: denied.status, authenticated: status.status, aiConfigured: data.aiConfigured, features: data.features }));
