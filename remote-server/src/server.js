@@ -579,7 +579,7 @@ function buildMcp() {
   const BIN_DIR = path.join(__dirname, "..", "node_modules", ".bin");
   const LSP_SERVERS = {
     typescript: { command: path.join(BIN_DIR, "typescript-language-server"), args: ["--stdio"], languages: ["typescript", "javascript", "tsx", "jsx"] },
-    python: { command: path.join(BIN_DIR, "pyright-langserver"), args: ["--stdio"], languages: ["python"] },
+    python: { command: "pylsp", args: [], languages: ["python"] },
     go: { command: "gopls", args: ["serve"], languages: ["go"] },
     rust: { command: "rust-analyzer", args: [], languages: ["rust"] },
     bash: { command: path.join(BIN_DIR, "bash-language-server"), args: ["start"], languages: ["bash", "shell"] },
@@ -606,8 +606,8 @@ function buildMcp() {
     
     const initPromise = new Promise((resolve, reject) => {
       const serverProcess = spawn(config.command, config.args, {
-        cwd: root,
-        env: { ...process.env, NODE_OPTIONS: "--max-old-space-size=4096" },
+        cwd: config.cwd || root,
+        env: { ...process.env, NODE_OPTIONS: "--max-old-space-size=4096", ...config.env },
         stdio: ["pipe", "pipe", "pipe"]
       });
       
