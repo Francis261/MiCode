@@ -336,3 +336,10 @@ export const isRateLimited = (key, limit = 300, windowMs = 60_000) => {
   record(`rl:${key}`, windowMs);
   return false;
 };
+
+// Shared with the admin pages (src/admin.js).
+export const adminKit = {
+  clientIp, over, record, safeEqual, esc, sendHtml, sendJson, readForm, shell, sign, verify, nowSec,
+  publicUrl: PUBLIC_URL,
+  ownerPasswordOk: (pw) => Boolean(pw) && safeEqual(pw, OWNER_PASSWORD),
+};

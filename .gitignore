@@ -4,6 +4,13 @@
 # But track these MCP server related files
 !.gitignore
 !remote-server/
+!remote-server/src/
+!remote-server/src/*.js
+!remote-server/test/
+!remote-server/test/*.mjs
+!remote-server/package.json
+!remote-server/package-lock.json
+!remote-server/manage.sh
 !mcp-plugin/
 
 # Ignore node_modules, logs, etc. in tracked directories

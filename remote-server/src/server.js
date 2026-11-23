@@ -12,6 +12,7 @@ import { createConnection, TextDocuments, ProposedFeatures, TextDocumentSyncKind
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { URI } from "vscode-uri";
 import { handleOAuth, mcpPlatform, authenticateMcp, rejectMcp, rateLimitKey, isRateLimited, oauthSummary } from "./oauth.js";
+import { registerBrowser, browserAvailable } from "./browser.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,8 @@ const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
 const ROOTS = (process.env.MICODE_WORKSPACES || "")
   .split(path.delimiter).map(s => path.resolve(s.trim())).filter(Boolean);
+// MICODE_ALLOWED_COMMANDS=*  ->  unrestricted: any executable (name or path) plus the run_shell tool.
+const ALLOW_ANY_COMMAND = (process.env.MICODE_ALLOWED_COMMANDS || "").trim() === "*";
 const COMMANDS = new Set((process.env.MICODE_ALLOWED_COMMANDS || "git,npm,pnpm,yarn,node,python3,bash,sh,zsh,python,pip,uv,go,cargo,make,cmake,ninja,clang,gcc,g++,rustc,jq,awk,sed,grep,find,rsync,tar,zip,unzip,curl,wget,ssh,scp,rsync,docker,kubectl,terraform,ansible,psql,mysql,redis-cli,mongo,sqlite3")
   .split(",").map(s => s.trim()).filter(Boolean));
 const MAX_BODY = 4 * 1024 * 1024;
@@ -303,10 +306,12 @@ function buildMcp() {
   });
 
   mcp.registerTool("run_command", {
-    description: "Run an allowed command in a workspace. No shell - use explicit args. Supports long-running commands with timeout.",
+    description: ALLOW_ANY_COMMAND
+      ? "Run any executable (by name or path) in a workspace. No shell here - pass explicit args, or use run_shell for pipes and && chains. Supports long-running commands with timeout."
+      : "Run an allowed command in a workspace. No shell - use explicit args. Supports long-running commands with timeout.",
     inputSchema: { workspace: z.string(), command: z.string().min(1).max(100), args: z.array(z.string().max(4000)).max(100).optional(), timeout_ms: z.number().int().min(1000).max(300000).optional(), env: z.record(z.string()).optional() }
   }, async ({ workspace, command, args = [], timeout_ms = 60000, env = {} }) => {
-    if (!COMMANDS.has(command) || command.includes("/") || command.includes("\\")) throw new Error(`Command '${command}' not in MICODE_ALLOWED_COMMANDS`);
+    if (!ALLOW_ANY_COMMAND && (!COMMANDS.has(command) || command.includes("/") || command.includes("\\"))) throw new Error(`Command '${command}' not in MICODE_ALLOWED_COMMANDS`);
     const root = await workspaceRoot(workspace);
     const output = await new Promise((resolve, reject) => {
       const commandEnv = { PATH: process.env.PATH || "", HOME: process.env.HOME || root, TMPDIR: process.env.TMPDIR || "/tmp", TEMP: process.env.TEMP || "/tmp", CI: "1", GIT_TERMINAL_PROMPT: "0", ...env };
@@ -321,6 +326,33 @@ function buildMcp() {
     });
     return textResult(output);
   });
+
+  if (ALLOW_ANY_COMMAND) {
+    mcp.registerTool("run_shell", {
+      description: "Run a shell command line with bash in a workspace: pipes, redirects, &&, ||, variables, globbing, cd. Optional cwd (relative to the workspace). A timeout kills the whole process group. Available only because MICODE_ALLOWED_COMMANDS=*.",
+      inputSchema: { workspace: z.string(), command: z.string().min(1).max(20000), cwd: z.string().optional(), timeout_ms: z.number().int().min(1000).max(300000).optional(), env: z.record(z.string()).optional() }
+    }, async ({ workspace, command, cwd: rel, timeout_ms = 60000, env = {} }) => {
+      const root = await workspaceRoot(workspace);
+      const dir = rel ? await safePath(root, rel) : root;
+      const output = await new Promise((resolve, reject) => {
+        const commandEnv = { PATH: process.env.PATH || "", HOME: process.env.HOME || root, TMPDIR: process.env.TMPDIR || "/tmp", TEMP: process.env.TEMP || "/tmp", LANG: process.env.LANG || "C.UTF-8", CI: "1", GIT_TERMINAL_PROMPT: "0", ...env };
+        const child = spawn("bash", ["-c", command], { cwd: dir, shell: false, detached: true, env: commandEnv, stdio: ["ignore", "pipe", "pipe"] });
+        let stdout = "", stderr = "", timedOut = false, truncated = false;
+        const killGroup = (sig) => { try { process.kill(-child.pid, sig); } catch { try { child.kill(sig); } catch { /* already gone */ } } };
+        const timer = setTimeout(() => { timedOut = true; killGroup("SIGTERM"); setTimeout(() => killGroup("SIGKILL"), 2000).unref(); }, timeout_ms);
+        const collect = (which) => (b) => {
+          const cur = which === "out" ? stdout : stderr;
+          if (cur.length >= MAX_OUTPUT) { truncated = true; return; }
+          if (which === "out") stdout += b.toString(); else stderr += b.toString();
+        };
+        child.stdout.on("data", collect("out"));
+        child.stderr.on("data", collect("err"));
+        child.on("error", e => { clearTimeout(timer); reject(e); });
+        child.on("close", (code, signal) => { clearTimeout(timer); resolve({ exit_code: code, signal, timed_out: timedOut, truncated, stdout, stderr }); });
+      });
+      return textResult(output);
+    });
+  }
 
   mcp.registerTool("git_status", {
     description: "Show Git status for a workspace.",
@@ -870,6 +902,7 @@ function buildMcp() {
     return textResult({ formatted: !!result, edits: result?.length || 0 });
   });
 
+  registerBrowser(mcp, { z, textResult });
   return mcp;
 }
 
@@ -962,4 +995,6 @@ server.listen(PORT, HOST, () => {
   console.log("Configured workspaces:", ROOTS.map(r => path.basename(r)).join(", "));
   if (o.ready) console.log("OAuth ready. MCP endpoints:", o.platforms.map(p => `/${p}/mcp`).join(", "));
   else console.error("OAuth NOT ready - all MCP endpoints return 503. Missing:", o.missing.join("; "));
+  console.log(ALLOW_ANY_COMMAND ? "Commands: UNRESTRICTED (run_command accepts any executable, run_shell enabled)" : `Commands: allowlist of ${COMMANDS.size}`);
+  console.log(browserAvailable ? "Browser automation: available" : "Browser automation: unavailable (install Chromium with npx playwright install chromium)");
 });

@@ -3,7 +3,7 @@
 #
 #   ./manage.sh              open the menu
 #   ./manage.sh status       one-shot commands: status | show | reveal [platform] | rotate [platform]
-#                            owner | revoke | redirects [platform] | test | restart | logs
+#                            owner | revoke | redirects [platform] | test | restart | logs | commands [on|off|custom]
 #
 # Settings live in remote-server/.env (mode 600). Changes apply after the server restarts.
 set -u
@@ -60,6 +60,14 @@ init_env() {
   } > "$ENV_FILE"
   chmod 600 "$ENV_FILE"
 }
+unset_var() { # unset_var KEY  (remove the line)
+  local tmp
+  backup_env
+  tmp="$(mktemp "$ENV_FILE.XXXXXX")" || return 1
+  K="$1" awk 'BEGIN{k=ENVIRON["K"]} index($0,k"=")!=1{print}' "$ENV_FILE" > "$tmp"
+  chmod 600 "$tmp" && mv "$tmp" "$ENV_FILE"
+}
+
 ensure_env() { [ -f "$ENV_FILE" ] || init_env; }
 
 mask() { local s="$1"; if [ "${#s}" -le 8 ]; then printf '********'; else printf '%s...%s' "${s:0:4}" "${s: -4}"; fi; }
@@ -102,6 +110,10 @@ cmd_status() {
   fi
   mode="$(stat -c %a "$ENV_FILE" 2>/dev/null)"
   if [ "$mode" = 600 ]; then ok ".env permissions are 600"; else warn ".env permissions are $mode (should be 600)"; fi
+  local cc; cc="$(get_var MICODE_ALLOWED_COMMANDS)"
+  if [ "$cc" = "*" ]; then warn "Command access: UNRESTRICTED (any executable + run_shell)"
+  elif [ -n "$cc" ]; then info "  Command access: custom allowlist"
+  else info "  Command access: built-in allowlist"; fi
   for p in "${PLATFORMS[@]}"; do
     if [ -z "$(get_var "MICODE_${p^^}_CLIENT_ID")" ]; then info "  $p: no credentials in .env"; continue; fi
     code="$(http_code "http://127.0.0.1:$port/.well-known/oauth-protected-resource/$p/mcp")"
@@ -246,6 +258,34 @@ cmd_restart() {
   cmd_status
 }
 
+cmd_commands() {
+  ensure_env
+  local cur mode="${1:-}" list
+  cur="$(get_var MICODE_ALLOWED_COMMANDS)"
+  if [ -z "$mode" ]; then
+    if [ "$cur" = "*" ]; then info "Command access: ${R}UNRESTRICTED${N} (any executable + run_shell)"
+    elif [ -n "$cur" ]; then info "Command access: custom allowlist ($cur)"
+    else info "Command access: built-in allowlist"; fi
+    info "  1) Unrestricted   2) Built-in allowlist   3) Custom allowlist   (Enter = cancel)"
+    read -r -p "Choose: " mode
+    case "$mode" in 1) mode=on ;; 2) mode=off ;; 3) mode=custom ;; *) info "Unchanged."; return 0 ;; esac
+  fi
+  case "$mode" in
+    on)
+      warn "Anyone holding a valid token can then run ANY command as '$(id -un)' on this machine, including reading .env and other projects' files."
+      ask_yes "Enable unrestricted command access?" || { info "Cancelled."; return 0; }
+      set_var MICODE_ALLOWED_COMMANDS "*"; ok "Unrestricted command access enabled" ;;
+    off)
+      unset_var MICODE_ALLOWED_COMMANDS; ok "Back to the built-in allowlist" ;;
+    custom)
+      read -r -p "Comma-separated command names: " list
+      [[ "$list" =~ ^[A-Za-z0-9._+,-]+$ ]] || { err "Use letters, digits and . _ + - , only"; return 1; }
+      set_var MICODE_ALLOWED_COMMANDS "$list"; ok "Allowlist saved" ;;
+    *) err "Use: commands on|off|custom"; return 1 ;;
+  esac
+  offer_restart
+}
+
 cmd_logs() { command -v pm2 >/dev/null 2>&1 && pm2 logs "$PM2_APP" --lines 40 --nostream || err "pm2 not found"; }
 
 usage() { sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
@@ -260,13 +300,14 @@ menu() {
     info "  3) Reveal a client secret 8) Test endpoints"
     info "  4) Rotate a client secret 9) Restart server"
     info "  5) Change owner password  10) View logs"
+    info "  11) Command access"
     info "  0) Quit"
     read -r -p "> " a || break
     case "$a" in
       1) cmd_status ;; 2) cmd_show ;; 3) cmd_reveal ;; 4) cmd_rotate ;; 5) cmd_owner ;;
-      6) cmd_revoke ;; 7) cmd_redirects ;; 8) cmd_test ;; 9) cmd_restart ;; 10) cmd_logs ;;
+      6) cmd_revoke ;; 7) cmd_redirects ;; 8) cmd_test ;; 9) cmd_restart ;; 10) cmd_logs ;; 11) cmd_commands ;;
       0|q|quit|exit) break ;;
-      *) warn "Choose 0-10" ;;
+      *) warn "Choose 0-11" ;;
     esac
   done
 }
@@ -283,6 +324,7 @@ case "${1:-menu}" in
   test) cmd_test ;;
   restart) cmd_restart ;;
   logs) cmd_logs ;;
+  commands) cmd_commands "${2:-}" ;;
   -h|--help|help) usage ;;
   *) err "Unknown command '$1'"; usage; exit 1 ;;
 esac

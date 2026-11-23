@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test test/oauth.test.mjs"
+    "test": "node --test test/oauth.test.mjs test/commands.test.mjs"
   },
   "keywords": [],
   "author": "",
@@ -17,5 +17,8 @@
     "vscode-languageserver-textdocument": "^1.0.16",
     "vscode-uri": "^3.2.0",
     "zod": "^4.6.7"
+  },
+  "optionalDependencies": {
+    "playwright-core": "^1.65.1"
   }
 }
