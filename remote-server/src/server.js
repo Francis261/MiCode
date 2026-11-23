@@ -1,3 +1,4 @@
+import "./env.js"; // must stay the first import: loads .env before other modules read process.env
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
@@ -10,6 +11,7 @@ import chokidar from "chokidar";
 import { createConnection, TextDocuments, ProposedFeatures, TextDocumentSyncKind, StreamMessageReader, StreamMessageWriter } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { URI } from "vscode-uri";
+import { handleOAuth, mcpPlatform, authenticateMcp, rejectMcp, rateLimitKey, isRateLimited, oauthSummary } from "./oauth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,18 +25,10 @@ const COMMANDS = new Set((process.env.MICODE_ALLOWED_COMMANDS || "git,npm,pnpm,y
 const MAX_BODY = 4 * 1024 * 1024;
 const MAX_OUTPUT = 256 * 1024;
 const MAX_FILE = 4 * 1024 * 1024;
-const rate = new Map();
 
 if (!ROOTS.length) {
   console.error("Set MICODE_WORKSPACES to one or more absolute workspace directories.");
   process.exit(1);
-}
-function limited(req) {
-  const key = req.socket.remoteAddress || "unknown";
-  const now = Date.now();
-  const recent = (rate.get(key) || []).filter(t => now - t < 60_000);
-  recent.push(now); rate.set(key, recent);
-  return recent.length > 200;
 }
 function json(res, status, data) {
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
@@ -935,9 +929,16 @@ function parseUnifiedDiff(diff) {
 }
 
 const server = createServer(async (req, res) => {
-  if (req.url === "/health" && req.method === "GET") return json(res, 200, { ok: true, service: "micode-remote", version: "2.0.0" });
-  if (req.url !== "/mcp") return json(res, 404, { error: "Not found" });
-  if (limited(req)) return json(res, 429, { error: "Rate limit exceeded" });
+  const url = new URL(req.url, "http://localhost");
+  if (url.pathname === "/health" && req.method === "GET") return json(res, 200, { ok: true, service: "micode-remote", version: "2.1.0" });
+  // OAuth discovery, authorize and token endpoints (per platform).
+  if (await handleOAuth(req, res, url)) return;
+  // The MCP endpoint exists only at /<platform>/mcp and always requires a valid bearer token.
+  const platform = mcpPlatform(url.pathname);
+  if (!platform) return json(res, 404, { error: "Not found" });
+  const auth = authenticateMcp(req, platform);
+  if (!auth.ok) return rejectMcp(res, platform, auth);
+  if (isRateLimited(rateLimitKey(req, auth))) return json(res, 429, { error: "Rate limit exceeded" });
   try {
     const mcp = buildMcp();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
@@ -956,6 +957,9 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`MiCode remote MCP v2.0 listening on http://${HOST}:${PORT}/mcp`);
+  const o = oauthSummary();
+  console.log(`MiCode remote MCP v2.1 listening on http://${HOST}:${PORT}`);
   console.log("Configured workspaces:", ROOTS.map(r => path.basename(r)).join(", "));
+  if (o.ready) console.log("OAuth ready. MCP endpoints:", o.platforms.map(p => `/${p}/mcp`).join(", "));
+  else console.error("OAuth NOT ready - all MCP endpoints return 503. Missing:", o.missing.join("; "));
 });
